@@ -1,0 +1,113 @@
+SPADDR	equ 0x1000
+
+#target ROM
+#code _CODE, 0, 0x800
+#data _RAM, 0x800, 0xF00
+STR1 defs 16
+STR2 defs 16
+STR3 defs 16
+#code _CODE
+
+	ld hl, SPADDR
+	ld sp, hl
+
+	jp main
+
+WELCOME .ascii 	8, "stRing1", 0x00
+SHELL .ascii 	8, "string1", 0x00
+
+
+
+;IN    HL     Address of string1. First byte is length
+;      DE     Address of string2. First byte is length
+;OUT   zero   Set if string1 = string2, reset if string1 != string2.
+;      carry  Set if string1 > string2, reset if string1 <= string2.
+CmpStrings:
+    PUSH   HL
+    PUSH   DE
+
+    LD     A, (DE)          ; Compare lengths to determine smaller string
+    CP     (HL)            ; (want to minimize work).
+    JR     C, Str1IsBigger
+    LD     A, (HL)
+
+Str1IsBigger:
+    LD     C, A             ; Put length in BC
+    LD     B, 0
+    INC    DE              ; Increment pointers to meat of string.
+    INC    HL
+
+CmpLoop:
+    LD     A, (DE)          ; Compare bytes.
+    CPI
+    JR     NZ, NoMatch      ; If (HL) != (DE), abort.
+    INC    DE              ; Update pointer.
+    JP     PE, CmpLoop
+
+    POP    DE
+    POP    HL
+    LD     A, (DE)          ; Check string lengths to see if really equal.
+    CP     (HL)
+    RET
+
+NoMatch:
+    DEC    HL
+    CP     (HL)            ; Compare again to affect carry.
+    POP    DE
+    POP    HL
+    RET
+
+loadstrings:
+
+#code _CODE
+
+	ld bc, 10
+	ld de, STR1
+	ld hl, WELCOME
+	ldir
+
+	ld bc, 10
+	ld de, STR2
+	ld hl, SHELL
+	ldir
+
+	ret
+
+copy_screen_to_temp:
+	halt
+	; hl should be
+	ld hl, STR1
+	inc hl
+	ld de, STR3
+	ld a, c
+	ld (de), a
+	inc de
+	ldir
+	ret
+
+main:
+	call loadstrings
+
+runloop:
+
+	; ld bc, 3	
+	; call copy_screen_to_temp
+
+
+	halt
+	ld a, 0
+	cp 0
+	; ld a, 4
+	; ld hl, 3
+	;ld c, a
+	;ld b, 0
+	; add hl, bc
+
+
+	;ld hl, STR1
+	;ld de, STR2
+	;call CmpStrings
+
+
+	halt
+

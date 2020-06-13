@@ -1,0 +1,94 @@
+                        ; --------------------------------------
+                        ; zasm: assemble "app_test.z80"
+                        ; date: 2020-06-13 15:39:52
+                        ; --------------------------------------
+
+
+                        
+                        ;longwait equ 0x10
+008F:                   longwait equ 0x8f
+00AB:                   charout equ 0xab
+0114:                   cleardisplay equ 0x114
+0122:                   set_carret_home equ 0x122
+0146:                   return_shell equ 0x146
+00EE:                   raw_textout equ 0xee
+034C:                   app_ret equ 0x34C
+004E:                   some_text equ 0x4e
+                        
+                        
+                        #target bin
+0882:                   #code _CODE, 0x882, 0x700	; 0x882 is the allocated memory for application of size 0x700
+                        #code _CODE
+                        ;stuff .ascii "klmn"
+0882: C38508   [10]     	jp start
+                        
+0885:                   start:
+                        
+0885: CD1401   [17]     	call cleardisplay
+                        
+0888: 1E4D     [24]     	ld e, 'M'
+088A: CDAB00   [41]     	call charout
+088D: 1E79     [48]     	ld e, 'y'
+088F: CDAB00   [65]     	call charout
+0892: 1E20     [72]     	ld e, ' '
+0894: CDAB00   [89]     	call charout
+0897: 1E52     [96]     	ld e, 'R'
+0899: CDAB00   [113]    	call charout
+089C: 1E41     [120]    	ld e, 'A'
+089E: CDAB00   [137]    	call charout
+08A1: 1E4D     [144]    	ld e, 'M'
+08A3: CDAB00   [161]    	call charout
+08A6: 1E20     [168]    	ld e, ' '
+08A8: CDAB00   [185]    	call charout
+08AB: 1E41     [192]    	ld e, 'A'
+08AD: CDAB00   [209]    	call charout
+08B0: 1E70     [216]    	ld e, 'p'
+08B2: CDAB00   [233]    	call charout
+08B5: 1E70     [240]    	ld e, 'p'
+08B7: CDAB00   [257]    	call charout
+08BA: CD8F00   [274]    	call longwait
+                        
+08BD: CD1401   [291]    	call cleardisplay
+08C0: CD8F00   [308]    	call longwait
+                        ;	ld hl, some_text
+08C3: 21CF08   [318]    	ld hl, MA_MSG
+08C6: CDEE00   [335]    	call raw_textout
+08C9: CD8F00   [352]    	call longwait
+                        
+                        	; call cleardisplay
+                        	; call longwait
+                        	; call return_shell
+                        
+08CC: C34C03   [362]    	jp app_ret
+                        
+08CF: 57656C6C          MA_MSG .ascii "Well hello there!", 0x0
+08D3: 2068656C          
+08D7: 6C6F2074          
+08DB: 68657265          
+08DF: 2100              
+                        
+
+
+; +++ segments +++
+
+#CODE _CODE    = $0882 =  2178,  size = $0700 =  1792
+
+; +++ global symbols +++
+
+MA_MSG          = $08CF =  2255  _CODE   app_test.z80:58
+_CODE           = $0882 =  2178  _CODE   app_test.z80:13 (unused)
+_CODE_end       = $0F82 =  3970  _CODE   app_test.z80:13 (unused)
+_CODE_size      = $0700 =  1792  _CODE   app_test.z80:13 (unused)
+app_ret         = $034C =   844          app_test.z80:9
+charout         = $00AB =   171          app_test.z80:4
+cleardisplay    = $0114 =   276          app_test.z80:5
+longwait        = $008F =   143          app_test.z80:3
+raw_textout     = $00EE =   238          app_test.z80:8
+return_shell    = $0146 =   326          app_test.z80:7 (unused)
+set_carret_home = $0122 =   290          app_test.z80:6 (unused)
+some_text       = $004E =    78          app_test.z80:10 (unused)
+start           = $0885 =  2181  _CODE   app_test.z80:19
+
+
+total time: 0.0016 sec.
+no errors

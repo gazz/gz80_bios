@@ -1,0 +1,9 @@
+		ld de, 50000
+pause:	
+		; read ram
+		ld b, (hl)
+
+		dec de
+    	ld a,d
+    	or e
+		jp nz,pause

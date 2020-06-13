@@ -1,0 +1,59 @@
+
+;longwait equ 0x10
+longwait equ 0x8f
+charout equ 0xab
+cleardisplay equ 0x114
+set_carret_home equ 0x122
+return_shell equ 0x146
+raw_textout equ 0xee
+app_ret equ 0x34C
+some_text equ 0x4e
+
+
+#target bin
+#code _CODE, 0x882, 0x700	; 0x882 is the allocated memory for application of size 0x700
+#code _CODE
+;stuff .ascii "klmn"
+	jp start
+
+start:
+
+	call cleardisplay
+
+	ld e, 'M'
+	call charout
+	ld e, 'y'
+	call charout
+	ld e, ' '
+	call charout
+	ld e, 'R'
+	call charout
+	ld e, 'A'
+	call charout
+	ld e, 'M'
+	call charout
+	ld e, ' '
+	call charout
+	ld e, 'A'
+	call charout
+	ld e, 'p'
+	call charout
+	ld e, 'p'
+	call charout
+	call longwait
+
+	call cleardisplay
+	call longwait
+;	ld hl, some_text
+	ld hl, MA_MSG
+	call raw_textout
+	call longwait
+
+	; call cleardisplay
+	; call longwait
+	; call return_shell
+
+	jp app_ret
+
+MA_MSG .ascii "Well hello there!", 0x0
+

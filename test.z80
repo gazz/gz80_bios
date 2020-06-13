@@ -1,0 +1,844 @@
+PORTA 	equ 0x4
+PORTB 	equ 0x5
+PORTAC 	equ 0x6
+PORTBC 	equ 0x7
+SERA 	equ 0x8
+SERB 	equ 0x9
+SERAC 	equ 0xa
+SERBC 	equ 0xb
+	
+DSP_CLR equ 1
+DSP_RH	equ 2
+DSP_MI	equ 6
+DSP_ON	equ 14
+DSP_IW	equ 0b00000001
+DSP_IR	equ 3
+DSP_DW	equ	0b00000101
+SPADDR	equ 0x1000
+
+#target ROM
+#code _BOOT
+#code _GSINIT
+#code _CODE
+#code _END, *, 0x800 - _CODE_end
+#data _BIOS_RAM, 0x800, 0x80
+#data _WORK_RAM, *, 0x700
+#data _STACK_RAM, *, 0x80
+
+#code _BOOT
+	; init stack address
+	ld hl, SPADDR
+	ld sp, hl
+
+	ld hl, TMP_APP_INIT
+	ld de, APP_LOC
+	ld bc, 10
+	ldir
+
+	jp main
+	halt
+
+#code _CODE
+
+
+WELCOME .asciz 	"gz80, v0.1         "
+SHELL .asciz 	" >                  "
+
+TMP_APP_INIT defb 0xdf, 0x2e, 5, 0xab, 0xc8
+
+	call cleardisplay 
+	call longwait
+	call longwait
+	call longwait
+	ret
+
+SER_LINE0 .ascii "Kas augshaa!", 0x00
+
+
+SERIAL_INIT
+	defb 0, 0b00011000	; WR0, channel reset
+	defb 4, 0b11000100  ; WR4, no parity, 1 stop bit, x64 clock mode
+	defb 3, 0b11000001	; WR3, Rx enable, Rx 8 bits /char
+	defb 5, 0b01101000	; WR5, Tx enable, Tx 8 bitts char
+	defb 1, 0b10000000	; WR1, Wait/Ready on R/T enable 
+
+#data _BIOS_RAM
+; sub the same char from the last char to make it byte \00
+LCD1 defs 40
+LCD2 defs 40
+CARRET_POS defs 1
+DISP_LINE defs 1
+TMP_STR defs 40
+
+#data _WORK_RAM
+APP_LOC defs 0x700
+
+#code _CODE
+
+initpio:
+	; set ouput mode on PIO 
+	ld a, 0xf	; b00001111 is control byte for output
+	; b1 addresses pio in command mode
+	out PORTAC, a
+	out PORTBC, a
+	ret
+
+initserial:
+	push hl
+	ld hl, SERIAL_INIT
+	ld b, 10	; size of serial init code 5 registers(a byte address) x 1 byte config
+	ld c, SERAC
+	otir
+
+	pop hl
+	ret
+
+wait:
+	push hl
+	ld hl, WAIT_HERE
+	pop hl
+	push bc
+	ld b, 255
+#local
+wloop:
+	nop
+	djnz wloop
+#endlocal
+	pop bc
+	ret
+
+; wait for 255^2 machine cycles
+exwait:
+	push bc
+	ld b, 255
+#local
+eloop:
+	call wait
+	djnz eloop
+#endlocal
+	pop bc
+	ret
+
+; wait for 255^2*5 machine cycles
+longwait:
+	push bc
+	ld b, 5
+#local
+lloop:
+	call exwait
+	djnz lloop
+#endlocal
+	pop bc
+	ret
+
+
+pioout:
+	; output to pio
+	ld a, d
+	out PORTB, a
+	ld a, e
+	out PORTA, a
+	ld a, 0
+	out PORTB, a
+	call wait
+	ret
+
+sioout:
+	ld a, e
+	out SERA, a
+	ret
+
+charout:
+	push af
+	push bc
+	push hl
+	; check if new line, then do line feed instead
+	ld a, e
+	sub 13
+	jp z, skip
+
+	ld a, e
+	sub 8
+	jp z, backspace
+
+	ld a, e
+	sub 10
+	jp z, newline_char
+
+	; display out
+	ld d, DSP_DW
+	call pioout
+	; serial out
+
+	call sioout
+
+	ld hl, CARRET_POS
+	ld b, 0
+	ld c, (hl)
+	ld hl, LCD2
+	add hl, bc
+	ld (hl), e
+	
+	ld hl, CARRET_POS
+	inc (hl)
+
+skip:
+backspace:
+	pop hl
+	pop bc
+	pop af
+	ret
+
+newline_char:
+	call line_feed
+	jp skip
+
+
+mstringout:
+	ld d, DSP_DW
+soutloop:
+	ld a, (hl)
+	or a
+	ret z
+
+	ld e, (hl)
+	call charout
+	inc hl
+	jp soutloop
+
+raw_textout:
+#local
+	ld d, DSP_DW
+nextchar:
+	ld a, (hl)
+	or a
+	ret z
+
+	ld e, (hl)
+	call pioout
+	inc hl
+	jp nextchar
+#endlocal
+
+default_lcd_lines:
+	push hl
+	ld bc, 20
+	ld de, LCD1
+	ld hl, WELCOME
+	ldir
+	ld bc, 20
+	ld de, LCD2
+	ld hl, SHELL
+	ldir
+	pop hl
+	ret
+
+cleardisplay:
+	; clear display
+	ld d, DSP_IW
+	ld e, 0b00000001
+	call pioout
+	call wait
+	call wait
+	ret
+
+set_carret_home:
+	push hl
+	ld d, DSP_IW
+	ld e, 0b10000000
+	call pioout
+	ld hl, CARRET_POS
+	ld (hl), 0	
+	pop hl
+	ret	
+
+set_carret_2nd_line:
+	ld d, DSP_IW
+	ld e, 0b11000000
+	call pioout
+	ret	
+
+set_carret_raw:
+	push af
+	; b - offset, 64 (0x40) is 2nd line
+	; c - offset on the line
+	ld d, DSP_IW
+	ld a, 0x80
+	add b
+	add c
+	ld e, a
+	call pioout
+	pop af
+	ret
+
+return_shell:
+	push hl
+	; clear shell line
+	ld bc, 20
+	ld de, LCD2
+	ld hl, SHELL
+	ldir
+
+	call set_carret_2nd_line
+	ld hl, LCD2
+	call raw_textout
+
+	call set_carret_2nd_line
+	ld hl, DISP_LINE
+	ld a, (hl)
+	add 48
+	ld d, DSP_DW
+	ld e, a
+	call pioout
+
+	; position carret
+	ld d, DSP_IW
+	ld e, 0b11000010
+	call pioout
+
+	ld hl, CARRET_POS
+	ld (hl), 2
+
+	pop hl
+	ret
+
+line_feed:
+	push hl
+	; copy lcd2 into lcd1
+	ld bc, 20
+	ld hl, LCD2
+	ld de, LCD1
+	ldir
+
+	ld a, (DISP_LINE)
+	add 48
+	ld hl, LCD1
+	ld (hl), a
+
+	ld hl, DISP_LINE
+	inc (hl)
+
+	call set_carret_home
+
+	ld hl, LCD1
+	call raw_textout
+
+	call return_shell
+	pop hl
+	ret
+
+initdisplay:
+	; function set
+	ld d, DSP_IW
+	ld e, 0b00111000
+	call pioout
+	call wait
+	call wait
+
+	; display on 
+	ld d, DSP_IW
+	ld e, 0b00001111
+	call pioout
+	call wait
+	call wait
+
+	; increment mode
+	ld d, DSP_IW
+	ld e, 0b00000110
+	call pioout
+	call wait
+	call wait
+
+	call cleardisplay
+	ret
+
+;IN    HL     Address of string1.
+;      DE     Address of string2.
+;OUT   zero   Set if string1 = string2, reset if string1 != string2.
+;      carry  Set if string1 > string2, reset if string1 <= string2.
+
+CmpStrings:
+    PUSH   HL
+    PUSH   DE
+
+    LD     A, (DE)          ; Compare lengths to determine smaller string
+    CP     (HL)            ; (want to minimize work).
+    JR     C, Str1IsBigger
+    LD     A, (HL)
+
+Str1IsBigger:
+    LD     C, A             ; Put length in BC
+    LD     B, 0
+    INC    DE              ; Increment pointers to meat of string.
+    INC    HL
+
+CmpLoop:
+    LD     A, (DE)          ; Compare bytes.
+    CPI
+    JR     NZ, NoMatch      ; If (HL) != (DE), abort.
+    INC    DE              ; Update pointer.
+    JP     PE, CmpLoop
+
+    POP    DE
+    POP    HL
+    LD     A, (DE)          ; Check string lengths to see if really equal.
+    CP     (HL)
+    RET
+
+NoMatch:
+    DEC    HL
+    CP     (HL)            ; Compare again to affect carry.
+    POP    DE
+    POP    HL
+    RET
+
+reset:
+	call default_lcd_lines
+	ld hl, DISP_LINE
+	ld (hl), 0
+	; this is the first init
+	call set_carret_home
+	ld hl, LCD1
+	call raw_textout
+	call return_shell
+	ret
+
+
+LOAD_TITLE1 .asciz "Loading programm:"
+load:
+	call set_carret_home
+	ld hl, LOAD_TITLE1
+	call raw_textout
+
+	call set_carret_2nd_line
+	ld a, e
+	add 48
+;	ld e, a
+;	call charout
+	
+	; load destination in RAM
+	ld hl, APP_LOC
+#local
+	; set load buffer size to 0 / init state
+	ld (hl), 0
+loadpage:
+	; wait for character to appear
+	in a, (SERAC)
+	bit 0, a
+	jr z, loadpage
+
+	; read page size
+	in a, (SERA)
+	or a
+	jp z, allpagesloaded ; if the page size is 0, jump to finish
+
+	; store current page size in register C
+	ld b, 0
+	ld c, a
+	
+	; reset HL to beginning of RAM buffer
+	; add curent buffer size to accumulator value (current page size)
+	ld hl, APP_LOC
+	; store new buffer size after appending this page
+	ld d, (hl)
+	ld a, d
+	add a, c
+	ld (hl), a
+	
+	; adjust for buffer size byte
+	;inc hl
+
+	; we wouldn't even touch this if page size was 0, so always increment & then check if need to move it more
+	ld a, d
+	inc a
+	ld b, a
+moveoffset:
+	; increment buffer location current buffer size times
+	inc hl
+	djnz moveoffset
+
+
+	; set number of bytes to read to current page size (stored in C register)
+	ld b, c
+	ld c, SERA ; we want to read from port SERA
+nextserial:
+	; wait for character ready
+	in a, (SERAC)
+	bit 0, a
+	jr z, nextserial
+
+	; read next byte into (hl)
+	ini
+	jr nz, nextserial	
+
+	; go to next page load
+	jp loadpage
+
+	;jp loadpage
+allpagesloaded:
+
+	; return carret
+	ld b, 64
+	ld hl, CARRET_POS
+	ld c, (hl)
+	call set_carret_raw
+
+	call longwait
+
+	call reset
+#endlocal
+	ret
+
+display_app_bytes:
+	push bc
+	push de
+	ld hl, APP_LOC
+	ld b, (hl)
+	inc hl
+outbytes:
+	ld e, (hl)
+	inc hl
+	call charout
+	djnz outbytes
+
+	call longwait
+	pop de
+	pop bc
+	ret
+
+
+peek0:
+#local
+	push af
+	ld b, 0
+	ld c, 10
+	call set_carret_raw
+	ld hl, APP_LOC
+	pop af
+
+	ld c, a
+	ld b, 0
+	add hl, bc
+
+	ld d, DSP_DW
+	ld a, (hl)
+	add 48
+	ld e, a
+	call pioout
+
+	ld b, 64
+	ld hl, CARRET_POS
+	ld c, (hl)
+	call set_carret_raw
+
+#endlocal
+	ret	
+
+; 0..9 = 48..57
+; a..f = 97..102
+
+NumToHex
+	ld c, a   ; a = number to convert
+	call Num1
+	ld d, a
+	ld a, c
+	call Num2
+	ld e, a
+	ret  ; return with hex number in de
+
+Num1
+	rra
+    rra
+    rra
+    rra
+Num2
+	or $F0
+    daa
+    add a, $A0
+    adc a, $40 ; Ascii hex at this point (0 to F)   
+    ret
+
+peek:
+#local
+	push af
+	ld b, 0
+	ld c, 10
+	call set_carret_raw
+	ld hl, APP_LOC
+	pop af
+
+	; calculate address for peek byte
+	ld c, a
+	ld b, 0
+	add hl, bc
+
+	ld a, (hl)
+	call NumToHex
+
+	; store lsb in c register
+	ld c, e
+	ld b, d
+
+	ld d, DSP_DW
+		
+	; ld e, (hl)
+	; b register contains lsb
+	ld e, b
+	call pioout
+	; c register contains msb
+	ld e, c
+	call pioout
+
+	ld b, 64
+	ld hl, CARRET_POS
+	ld c, (hl)
+	call set_carret_raw
+
+#endlocal
+	ret	
+
+; this will peek and display memory location in ram starting at APP_LOC (0xe00)
+peek_pos:
+#local	
+	; we need to move past [len] + 'peek ' string - 6 bytes
+	inc hl
+	inc hl
+	inc hl
+	inc hl
+	inc hl
+	inc hl
+
+	; decimal input needs to be converted to byte, eg 10 [49h48h] => 0xa
+	ld d, (hl)
+	inc hl
+	ld e, (hl)
+;	ld d, '0'
+;	ld e, '2
+	call HexToNum ; we have decoded value in A register
+
+	; move carret to 1st row 10th column for result display pos
+	ld b, 0
+	ld c, 10
+	call set_carret_raw
+
+	; we have address offset in a
+	ld hl, APP_LOC
+	or a
+	jp z, no_offset
+	ld b, a
+next_offset:	
+	inc hl
+	djnz next_offset
+no_offset:
+
+;	add hl, bc
+
+	; encode byte value to hex for display
+	ld a, (hl)
+	call NumToHex
+	ld c, e
+	ld b, d
+
+	; output value
+	ld d, DSP_DW		
+	; b register contains lsb
+	ld e, b
+	call pioout
+	; c register contains msb
+	ld e, c
+	call pioout
+
+	; reset carret back to the next row
+	ld b, 64
+	ld hl, CARRET_POS
+	ld c, (hl)
+	call set_carret_raw
+
+#endlocal
+	ret
+
+HexToNum
+   ld   a,d
+   call Hex1
+   add  a,a
+   add  a,a
+   add  a,a
+   add  a,a
+   ld   d,a
+   ld   a,e
+   call Hex1
+   or   d
+   ret
+
+Hex1
+   sub  '0'
+   cp   10
+   ret  c
+   sub  'A'
+   add  a, '0'
+   add a, 10
+   ret
+
+RUN_APP_TXT .ascii "Running app...!", 0x0
+run_app:
+	call cleardisplay
+
+	ld hl, RUN_APP_TXT
+	call mstringout
+	call longwait
+
+	ld hl, APP_LOC
+	inc hl
+	jp (hl)
+app_ret:
+	ret
+
+
+copy_screen_to_temp:
+	; hl should be
+	ld bc, 18
+	ld hl, LCD1
+	inc hl
+	inc hl
+	ld de, TMP_STR
+	ld a, c
+	ld (de), a
+	inc de
+	ldir
+	inc de
+	ld a, 0
+	ld (de), a
+	ret
+
+RESET_CMD .ascii 5, "reset", 0x0
+LOAD_CMD .ascii 4, "load", 0x0
+RUN_CMD .ascii 3, "run", 0x0
+PEEK0_CMD .ascii 5, "peek0", 0x0
+PEEK1_CMD .ascii 5, "peek1", 0x0
+PEEK2_CMD .ascii 5, "peek2", 0x0
+PEEK3_CMD .ascii 5, "peek3", 0x0
+PEEK4_CMD .ascii 5, "peek4", 0x0
+PEEK5_CMD .ascii 5, "peek5", 0x0
+PEEK6_CMD .ascii 5, "peek6", 0x0
+PEEK7_CMD .ascii 5, "peek7", 0x0
+PEEK_CMD .ascii 5, "peek ", 0x0
+commandeval:
+	ld bc, 10
+	call copy_screen_to_temp
+
+	; comparison
+	ld hl, TMP_STR
+	ld (hl), 5
+	ld de, RESET_CMD
+	call CmpStrings
+	call z, reset
+
+	; check load
+	ld hl, TMP_STR
+	ld (hl), 4
+	ld de, LOAD_CMD
+	call CmpStrings
+	call z, load
+
+	; run command
+	ld hl, TMP_STR
+	ld (hl), 3
+	ld de, RUN_CMD
+	call CmpStrings
+	call z, run_app
+
+	; peek ram for app addresses
+	ld hl, TMP_STR
+	ld (hl), 5
+	ld de, PEEK0_CMD
+	call CmpStrings
+	ld a, 0
+	call z, peek0
+
+	ld hl, TMP_STR
+	ld (hl), 5
+	ld de, PEEK1_CMD
+	call CmpStrings
+	ld a, 1
+	call z, peek
+
+	ld hl, TMP_STR
+	ld (hl), 5
+	ld de, PEEK2_CMD
+	call CmpStrings
+	ld a, 2
+	call z, peek
+
+	ld hl, TMP_STR
+	ld (hl), 5
+	ld de, PEEK3_CMD
+	call CmpStrings
+	ld a, 3
+	call z, peek
+
+	ld hl, TMP_STR
+	ld (hl), 5
+	ld de, PEEK4_CMD
+	call CmpStrings
+	ld a, 4
+	call z, peek
+
+
+	ld hl, TMP_STR
+	ld (hl), 5
+	ld de, PEEK5_CMD
+	call CmpStrings
+	ld a, 5
+	call z, peek
+
+
+	ld hl, TMP_STR
+	ld (hl), 5
+	ld de, PEEK6_CMD
+	call CmpStrings
+	ld a, 6
+	call z, peek
+
+
+	ld hl, TMP_STR
+	ld (hl), 5
+	ld de, PEEK7_CMD
+	call CmpStrings
+	ld a, 7
+	call z, peek
+
+	ld hl, TMP_STR
+	ld (hl), 5
+	ld de, PEEK_CMD
+	call CmpStrings
+	call z, peek_pos
+
+	ret
+
+waitserial:
+#local
+poll:
+	in a, (SERAC)
+	bit 0, a
+	jr z, poll
+#endlocal
+	in a, (SERA)
+	ld e, a
+	ret
+
+WAIT_HERE .ascii "Wait starts here!", 0x0
+main:
+	call initpio
+	call initdisplay
+	call initserial
+	call reset
+
+runloop:
+	call waitserial
+	call charout
+
+	call commandeval
+
+	jp runloop
+
+	halt
