@@ -42,21 +42,33 @@ rawout:
 
 moveup:
 	ld hl, ypos
+	ld a, (hl)
+	or 0
+	ret z
 	dec (hl)
 	ret
 
 movedown:
 	ld hl, ypos
+	ld a, (hl)
+	sub 1
+	ret z
 	inc (hl)
 	ret
 
 moveleft:
 	ld hl, xpos
+	ld a, (hl)
+	or 0
+	ret z
 	dec (hl)
 	ret
 
 moveright:
 	ld hl, xpos
+	ld a, (hl)
+	sub 15
+	ret z
 	inc (hl)
 	ret
  
@@ -154,14 +166,17 @@ reset_pos:
 	ret
 
 draw_player:
-; b - offset, 64 (0x40) is 2nd line
-; c - offset on the line
 	push bc
 	push hl
 	push de
-
-	ld hl, ypos
-	ld b, (hl)
+#local
+	ld a, (ypos)
+	ld b, a
+	ld a, 0
+moverow:
+	add a, 64
+	djnz moverow
+	ld b, a
 	
 	ld hl, xpos
 	ld c, (hl)
@@ -172,6 +187,7 @@ draw_player:
 	ld d, DSP_DW
 	call drawchar
 
+#endlocal
 	pop de
 	pop hl
 	pop bc
@@ -288,7 +304,6 @@ poll:
 
 	in a, (SERA)
 	ld (hl), a
-
 
 #endlocal
 done:
