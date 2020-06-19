@@ -1,0 +1,304 @@
+
+;longwait equ 0x10
+wait equ 0x6E
+longwait equ 0x85
+charout equ 0xa1
+drawchar equ 0x8F
+cleardisplay equ 0x10a
+raw_textout equ 0xe4
+app_ret equ 0x35b
+; loads serial input into E register
+wait_serial equ 0x484
+pioout equ $008F
+DSP_IW equ 0b00000001
+; set carret anywhere on the screen
+; b - offset, 64 (0x40) is 2nd line
+; c - offset on the line
+set_carret_raw equ 0x12F
+DSP_DW	equ	0b00000101
+SERA 	equ 0x8
+SERAC 	equ 0xa
+
+
+; NumToHex converter
+; a - input
+; de - output in Hex format
+NumToHex equ 0x2A5
+
+#target bin
+#code _CODE, 0x882, 0x6fe	; 0x882 is the allocated memory for application of size 0x6fe (2 bytes reserved for app size)
+#code _CODE
+
+; app entry point
+	jp main
+
+xpos defb 0
+ypos defb 0
+
+rawout:
+	ld d, DSP_DW
+	call pioout
+	ret
+
+moveup:
+	ld hl, ypos
+	dec (hl)
+	ret
+
+movedown:
+	ld hl, ypos
+	inc (hl)
+	ret
+
+moveleft:
+	ld hl, xpos
+	dec (hl)
+	ret
+
+moveright:
+	ld hl, xpos
+	inc (hl)
+	ret
+ 
+reset_2nd_line:
+	push bc
+	ld b, 64
+	ld c, 0
+	call set_carret_raw
+	pop bc
+	ret
+
+OutHex:
+	push bc
+	push de
+	call NumToHex
+	ld bc, de
+	ld d, DSP_DW
+	ld e, b
+	call drawchar
+	ld e, c
+	call drawchar
+	pop de
+	pop bc
+	ret
+
+output_keycode:
+	push bc
+	push de
+	push hl
+#local
+	; output currently pressed key code on the 2nd line of lcd
+	ld b, 64
+	ld c, 0
+	call set_carret_raw
+
+	ld hl, keystroke
+	; quick check if we have any keystroke chars
+	ld a, (hl)
+	or 0
+	jp z, done
+	ld b, a
+	inc hl
+outcode:	
+	ld a, (hl)
+	call OutHex
+	inc hl
+	djnz outcode
+
+done:	
+#endlocal
+	; transform A register to d & e codes
+	pop hl
+	pop de
+	pop bc
+	ret
+
+move:
+#local
+	ld a, (keystroke + 1)
+
+	push af
+	call reset_2nd_line
+	pop af
+
+	push af
+	sub 61h
+	call z, moveleft
+	pop af
+
+	push af
+	sub 64h
+	call z, moveright
+	pop af
+
+	push af
+	sub 77h
+	call z, moveup
+	pop af
+
+	push af
+	sub 73h
+	call z, movedown
+	pop af
+
+#endlocal
+	ret
+
+reset_pos:
+	push hl
+	ld hl, xpos
+	ld (hl), 0
+	ld hl, ypos
+	ld (hl), 0
+	pop hl
+	ret
+
+draw_player:
+; b - offset, 64 (0x40) is 2nd line
+; c - offset on the line
+	push bc
+	push hl
+	push de
+
+	ld hl, ypos
+	ld b, (hl)
+	
+	ld hl, xpos
+	ld c, (hl)
+
+	call set_carret_raw
+
+	ld e, '#'
+	ld d, DSP_DW
+	call drawchar
+
+	pop de
+	pop hl
+	pop bc
+	ret
+
+draw_player_location:
+	ld b, 64
+	ld c, 9
+	call set_carret_raw
+
+	ld d, DSP_DW
+	ld e, '['
+	call drawchar
+
+	ld a, (xpos)
+	call OutHex
+
+	ld e, ','
+	call drawchar
+
+	ld a, (ypos)
+	call OutHex
+
+	ld d, DSP_DW
+	ld e, ']'
+	call drawchar
+
+	ret	
+
+disablecursor:
+	; hide cursor
+	ld d, DSP_IW
+	ld e, 0b00001100
+	call pioout
+	ret
+
+main:
+	call cleardisplay
+	call reset_pos
+	call disablecursor
+
+runloop:
+	call cleardisplay
+
+	call output_keycode
+
+	; render
+	call draw_player_location
+	call draw_player
+
+	; wait for input
+	call wait_keystroke
+
+	; move
+	call move
+
+	jp runloop
+
+exit:
+	;halt
+	jp app_ret
+
+
+keystroke defs 4, 00h
+
+wait_keystroke:
+	push hl
+	push bc
+	push de
+	ld hl, keystroke
+#local	
+	ld (hl), 3
+	inc hl
+	ld (hl), 0
+	inc hl
+	ld (hl), 0
+	inc hl
+	ld (hl), 0
+	ld hl, keystroke
+
+; we wait for at least one keycode
+poll:
+	in a, (SERAC)
+	bit 0, a
+	jr z, poll
+
+	ld b, 0
+	inc b
+	; we have a valid first code so increment hl[0] to 1
+	; load the code into hl[1]
+	inc hl
+	in a, (SERA)
+	ld (hl), a
+
+	;jp done
+	; is there a 2nd keycode right away?
+	in a, (SERAC)
+	bit 0, a
+	jp z, done
+
+	inc b
+	inc hl
+
+	in a, (SERA)
+	ld (hl), a
+
+	; is there a 3rd keycode right away?
+	in a, (SERAC)
+	bit 0, a
+	jp z, done
+
+	inc b
+	inc hl
+
+	in a, (SERA)
+	ld (hl), a
+
+
+#endlocal
+done:
+	ld hl, keystroke
+	ld (hl), b
+	pop de
+	pop bc
+	pop hl
+	ret
+
+
+
+

@@ -1,17 +1,14 @@
 
 ;longwait equ 0x10
-longwait equ 0x8f
-charout equ 0xab
-cleardisplay equ 0x114
-set_carret_home equ 0x122
-return_shell equ 0x146
-raw_textout equ 0xee
-app_ret equ 0x34C
-some_text equ 0x4e
+longwait equ 0x85
+charout equ 0xa1
+cleardisplay equ 0x10a
+raw_textout equ 0xe4
+app_ret equ 0x35b
 
 
 #target bin
-#code _CODE, 0x882, 0x700	; 0x882 is the allocated memory for application of size 0x700
+#code _CODE, 0x882, 0x6fe	; 0x882 is the allocated memory for application of size 0x6fe (2 bytes reserved for app size)
 #code _CODE
 ;stuff .ascii "klmn"
 	jp start
@@ -48,6 +45,7 @@ start:
 	ld hl, MA_MSG
 	call raw_textout
 	call longwait
+
 
 	; call cleardisplay
 	; call longwait

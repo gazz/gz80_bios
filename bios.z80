@@ -32,7 +32,7 @@ SPADDR	equ 0x1000
 
 	ld hl, TMP_APP_INIT
 	ld de, APP_LOC
-	ld bc, 10
+	ld bc, 8
 	ldir
 
 	jp main
@@ -44,13 +44,7 @@ SPADDR	equ 0x1000
 WELCOME .asciz 	"gz80, v0.1         "
 SHELL .asciz 	" >                  "
 
-TMP_APP_INIT defb 0xdf, 0x2e, 5, 0xab, 0xc8
-
-	call cleardisplay 
-	call longwait
-	call longwait
-	call longwait
-	ret
+TMP_APP_INIT defb 0xdf, 0xfd, 5, 0xab, 0xc8, 0x00, 0x00, 0x00
 
 SER_LINE0 .ascii "Kas augshaa!", 0x00
 
@@ -420,7 +414,10 @@ load:
 	ld hl, APP_LOC
 #local
 	; set load buffer size to 0 / init state
-	ld (hl), 0
+	ld d, 0
+	ld e, 0
+	ld (hl), de
+
 loadpage:
 	; wait for character to appear
 	in a, (SERAC)
@@ -432,33 +429,24 @@ loadpage:
 	or a
 	jp z, allpagesloaded ; if the page size is 0, jump to finish
 
-	; store current page size in register C
+; ====================================
+
+	; store current page size in register pari BC
 	ld b, 0
 	ld c, a
-	
-	; reset HL to beginning of RAM buffer
-	; add curent buffer size to accumulator value (current page size)
+
 	ld hl, APP_LOC
-	; store new buffer size after appending this page
-	ld d, (hl)
-	ld a, d
-	add a, c
-	ld (hl), a
-	
-	; adjust for buffer size byte
-	;inc hl
-
-	; we wouldn't even touch this if page size was 0, so always increment & then check if need to move it more
-	ld a, d
-	inc a
-	ld b, a
-moveoffset:
-	; increment buffer location current buffer size times
+	ld de, (hl)
+	; first 2 bytes are the size of the app, skip those
 	inc hl
-	djnz moveoffset
+	inc hl
+	; move offset
+	add hl, de
 
+; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 	; set number of bytes to read to current page size (stored in C register)
+	push bc
 	ld b, c
 	ld c, SERA ; we want to read from port SERA
 nextserial:
@@ -469,7 +457,21 @@ nextserial:
 
 	; read next byte into (hl)
 	ini
-	jr nz, nextserial	
+	jr nz, nextserial
+	pop bc
+
+	; do 16 bit addition of the loaded memory, kind of hacky to us HL register for that
+	ld hl, APP_LOC
+	ld de, (hl)
+	; current app size loaded
+	ld hl, de
+	; add the current page size
+	add hl, bc
+	; move it to de proxy register as we can only reference memory via (hl)
+	ld de, hl
+	; load the app location & push the new calculated app size
+	ld hl, APP_LOC
+	ld (hl), de
 
 	; go to next page load
 	jp loadpage
@@ -688,9 +690,12 @@ run_app:
 	call longwait
 
 	ld hl, APP_LOC
+	; first 2 bytes are app size
+	inc hl
 	inc hl
 	jp (hl)
 app_ret:
+	call reset
 	ret
 
 
