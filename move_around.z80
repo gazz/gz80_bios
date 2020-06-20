@@ -3,7 +3,6 @@
 wait equ 0x6E
 exwait equ $007B
 longwait equ 0x85
-charout equ 0xa1
 drawchar equ 0x8F
 cleardisplay equ 0x10a
 raw_textout equ 0xe4
@@ -17,16 +16,14 @@ DSP_IW equ 0b00000001
 ; c - offset on the line
 set_carret_raw equ 0x12F
 DSP_DW	equ	0b00000101
-SERA 	equ 0x8
-SERAC 	equ 0xa
+OutHex equ $04BC
+disablecursor equ $04D8
+wait_ps2_scancode equ $0539
+; there are RAM mapped
+keystroke equ $083E
+scancode equ $0842
 
-SERB 	equ 0x9
-SERBC 	equ 0xb
 
-; NumToHex converter
-; a - input
-; de - output in Hex format
-NumToHex equ 0x2A5
 
 #target bin
 #code _CODE, 0x882, 0x6fe	; 0x882 is the allocated memory for application of size 0x6fe (2 bytes reserved for app size)
@@ -80,20 +77,6 @@ reset_2nd_line:
 	ld b, 64
 	ld c, 0
 	call set_carret_raw
-	pop bc
-	ret
-
-OutHex:
-	push bc
-	push de
-	call NumToHex
-	ld bc, de
-	ld d, DSP_DW
-	ld e, b
-	call drawchar
-	ld e, c
-	call drawchar
-	pop de
 	pop bc
 	ret
 
@@ -194,7 +177,7 @@ moverow:
 
 draw_player_location:
 	ld b, 64
-	ld c, 9
+	ld c, 11
 	call set_carret_raw
 
 	ld d, DSP_DW
@@ -217,7 +200,6 @@ draw_player_location:
 	ret	
 
 main:
-	call init_ps2_keyboard
 	call cleardisplay
 	call reset_pos
 	call disablecursor
@@ -233,7 +215,7 @@ runloop:
 	call draw_player
 
 	; wait for input
-	;call wait_keystroke
+	; call wait_keystroke
 
 	call wait_ps2_scancode
 	call scancode_to_keystroke
@@ -247,181 +229,6 @@ exit:
 	;halt
 	jp app_ret
 
-
-
-
-; TODO: move to BIOS
-disablecursor:
-	; hide cursor
-	ld d, DSP_IW
-	ld e, 0b00001100
-	call pioout
-	ret
-
-; move to BIOS
-keystroke defs 4, 00h
-wait_keystroke:
-	push hl
-	push bc
-	push de
-	ld hl, keystroke
-#local	
-	ld (hl), 3
-	inc hl
-	ld (hl), 0
-	inc hl
-	ld (hl), 0
-	inc hl
-	ld (hl), 0
-	ld hl, keystroke
-
-; we wait for at least one keycode
-poll:
-	in a, (SERAC)
-	bit 0, a
-	jr z, poll
-
-	ld b, 0
-	inc b
-	; we have a valid first code so increment hl[0] to 1
-	; load the code into hl[1]
-	inc hl
-	in a, (SERA)
-	ld (hl), a
-
-	;jp done
-	; is there a 2nd keycode right away?
-	in a, (SERAC)
-	bit 0, a
-	jp z, done
-
-	inc b
-	inc hl
-
-	in a, (SERA)
-	ld (hl), a
-
-	; is there a 3rd keycode right away?
-	in a, (SERAC)
-	bit 0, a
-	jp z, done
-
-	inc b
-	inc hl
-
-	in a, (SERA)
-	ld (hl), a
-
-done:
-#endlocal
-	ld hl, keystroke
-	ld (hl), b
-	pop de
-	pop bc
-	pop hl
-	ret
-
-
-PS2_SERIAL_INIT
-	defb 0, 0b00011000	; WR0, channel reset
-	defb 4, 0b00000101  ; WR4, odd parity, 1 stop bit, x1 clock mode coming from keyboard
-	defb 3, 0b11000001	; WR3, Rx enable, Rx 8 bits /char
-	defb 5, 0b01101000	; WR5, Tx enable, Tx 8 bitts char
-	defb 1, 0b10000000	; WR1, Wait/Ready on R/T enable 
-
-init_ps2_keyboard:
-	push hl
-	push bc
-
-	ld hl, PS2_SERIAL_INIT
-	ld b, 10	; size of serial init code 5 registers(a byte address) x 1 byte config
-	ld c, SERBC
-	otir
-
-	pop bc
-	pop hl
-	ret
-
-; waits on a scancode via serial port B that is wired up to PS/2 keyboard
-scancode defs 4, 00h
-wait_ps2_scancode:
-	push hl
-	push bc
-	push de
-	ld hl, scancode
-	ld (hl), 3
-	inc hl
-	ld (hl), 0
-	inc hl
-	ld (hl), 0
-	inc hl
-	ld (hl), 0
-	ld hl, scancode
-
-#local
-	jp poll
-
-sink_break_code:
-	in a, (SERBC)
-	bit 0, a
-	jr z, sink_break_code
-
-	in a, (SERB)
-	pop af
-	jp done
-
-poll:
-	in a, (SERBC)
-	bit 0, a
-	jr z, poll
-
-	ld b, 0
-	inc b
-	; we have a valid first code so increment hl[0] to 1
-	; load the code into hl[1]
-	inc hl
-	in a, (SERB)
-
-	push af
-	; ignore break codes
-	sub 0xf0
-	jp z, sink_break_code
-	pop af
-
-	; real scancode
-	ld (hl), a
-
-	;jp done
-	; is there a 2nd scancode right away?
-	in a, (SERBC)
-	bit 0, a
-	jp z, done
-
-	inc b
-	inc hl
-
-	in a, (SERB)
-	ld (hl), a
-
-	; is there a 3rd scancode right away?
-	in a, (SERBC)
-	bit 0, a
-	jp z, done
-
-	inc b
-	inc hl
-
-	in a, (SERB)
-	ld (hl), a
-
-done:
-	ld hl, scancode
-	ld (hl), b
-#endlocal
-	pop de
-	pop bc
-	pop hl
-	ret
 
 scancode_to_keystroke:
 	push hl

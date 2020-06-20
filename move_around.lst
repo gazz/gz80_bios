@@ -1,0 +1,317 @@
+                        ; --------------------------------------
+                        ; zasm: assemble "move_around.z80"
+                        ; date: 2020-06-19 21:19:00
+                        ; --------------------------------------
+
+
+                        
+                        ;longwait equ 0x10
+006E:                   wait equ 0x6E
+007B:                   exwait equ $007B
+0085:                   longwait equ 0x85
+008F:                   drawchar equ 0x8F
+010A:                   cleardisplay equ 0x10a
+00E4:                   raw_textout equ 0xe4
+035B:                   app_ret equ 0x35b
+                        ; loads serial input into E register
+0484:                   wait_serial equ 0x484
+008F:                   pioout equ $008F
+0001:                   DSP_IW equ 0b00000001
+                        ; set carret anywhere on the screen
+                        ; b - offset, 64 (0x40) is 2nd line
+                        ; c - offset on the line
+012F:                   set_carret_raw equ 0x12F
+0005:                   DSP_DW	equ	0b00000101
+04BC:                   OutHex equ $04BC
+04D8:                   disablecursor equ $04D8
+0539:                   wait_ps2_scancode equ $0539
+                        ; there are RAM mapped
+083E:                   keystroke equ $083E
+0842:                   scancode equ $0842
+                        
+                        
+                        
+                        #target bin
+0882:                   #code _CODE, 0x882, 0x6fe	; 0x882 is the allocated memory for application of size 0x6fe (2 bytes reserved for app size)
+                        #code _CODE
+                        
+                        ; app entry point
+0882: C34F09   [10]     	jp main
+                        
+0885: 00                xpos defb 0
+0886: 00                ypos defb 0
+                        
+0887:                   rawout:
+0887: 1605     [ 7]     	ld d, DSP_DW
+0889: CD8F00   [24]     	call pioout
+088C: C9       [34]     	ret
+                        
+088D:                   moveup:
+088D: 218608   [10]     	ld hl, ypos
+0890: 7E       [17]     	ld a, (hl)
+0891: F600     [24]     	or 0
+0893: C8       [29|35]  	ret z
+0894: 35       [40]     	dec (hl)
+0895: C9       [50]     	ret
+                        
+0896:                   movedown:
+0896: 218608   [10]     	ld hl, ypos
+0899: 7E       [17]     	ld a, (hl)
+089A: D601     [24]     	sub 1
+089C: C8       [29|35]  	ret z
+089D: 34       [40]     	inc (hl)
+089E: C9       [50]     	ret
+                        
+089F:                   moveleft:
+089F: 218508   [10]     	ld hl, xpos
+08A2: 7E       [17]     	ld a, (hl)
+08A3: F600     [24]     	or 0
+08A5: C8       [29|35]  	ret z
+08A6: 35       [40]     	dec (hl)
+08A7: C9       [50]     	ret
+                        
+08A8:                   moveright:
+08A8: 218508   [10]     	ld hl, xpos
+08AB: 7E       [17]     	ld a, (hl)
+08AC: D60F     [24]     	sub 15
+08AE: C8       [29|35]  	ret z
+08AF: 34       [40]     	inc (hl)
+08B0: C9       [50]     	ret
+                         
+08B1:                   reset_2nd_line:
+08B1: C5       [11]     	push bc
+08B2: 0640     [18]     	ld b, 64
+08B4: 0E00     [25]     	ld c, 0
+08B6: CD2F01   [42]     	call set_carret_raw
+08B9: C1       [52]     	pop bc
+08BA: C9       [62]     	ret
+                        
+08BB:                   output_keycode:
+08BB: C5       [11]     	push bc
+08BC: D5       [22]     	push de
+08BD: E5       [33]     	push hl
+                        #local
+                        	; output currently pressed key code on the 2nd line of lcd
+08BE: 0640     [40]     	ld b, 64
+08C0: 0E00     [47]     	ld c, 0
+08C2: CD2F01   [64]     	call set_carret_raw
+                        
+08C5: 213E08   [74]     	ld hl, keystroke
+                        	; quick check if we have any keystroke chars
+08C8: 7E       [81]     	ld a, (hl)
+08C9: F600     [88]     	or 0
+08CB: CAD708   [98|98]  	jp z, done
+08CE: 47       [102]    	ld b, a
+08CF: 23       [108]    	inc hl
+08D0:                   outcode:	
+08D0: 7E       [ 7]     	ld a, (hl)
+08D1: CDBC04   [24]     	call OutHex
+08D4: 23       [30]     	inc hl
+08D5: 10F9     [38|43]  	djnz outcode
+                        
+08D7:                   done:	
+                        #endlocal
+                        	; transform A register to d & e codes
+08D7: E1       [10]     	pop hl
+08D8: D1       [20]     	pop de
+08D9: C1       [30]     	pop bc
+08DA: C9       [40]     	ret
+                        
+08DB:                   move:
+                        #local
+08DB: 3A3F08   [13]     	ld a, (keystroke + 1)
+                        
+08DE: F5       [24]     	push af
+08DF: D66B     [31]     	sub 6bh
+08E1: CC9F08   [41|48]  	call z, moveleft
+08E4: F1       [51]     	pop af
+                        
+08E5: F5       [62]     	push af
+08E6: D674     [69]     	sub 74h
+08E8: CCA808   [79|86]  	call z, moveright
+08EB: F1       [89]     	pop af
+                        
+08EC: F5       [100]    	push af
+08ED: D675     [107]    	sub 75h
+08EF: CC8D08   [117|124]	call z, moveup
+08F2: F1       [127]    	pop af
+                        
+08F3: F5       [138]    	push af
+08F4: D672     [145]    	sub 72h
+08F6: CC9608   [155|162]	call z, movedown
+08F9: F1       [165]    	pop af
+                        
+                        #endlocal
+08FA: C9       [175]    	ret
+                        
+08FB:                   reset_pos:
+08FB: E5       [11]     	push hl
+08FC: 218508   [21]     	ld hl, xpos
+08FF: 3600     [31]     	ld (hl), 0
+0901: 218608   [41]     	ld hl, ypos
+0904: 3600     [51]     	ld (hl), 0
+0906: E1       [61]     	pop hl
+0907: C9       [71]     	ret
+                        
+0908:                   draw_player:
+0908: C5       [11]     	push bc
+0909: E5       [22]     	push hl
+090A: D5       [33]     	push de
+                        #local
+090B: 3A8608   [46]     	ld a, (ypos)
+090E: 47       [50]     	ld b, a
+090F: 3E00     [57]     	ld a, 0
+0911:                   moverow:
+0911: C640     [ 7]     	add a, 64
+0913: 10FC     [15|20]  	djnz moverow
+0915: 47       [19]     	ld b, a
+                        	
+0916: 218508   [29]     	ld hl, xpos
+0919: 4E       [36]     	ld c, (hl)
+                        
+091A: CD2F01   [53]     	call set_carret_raw
+                        
+091D: 1E23     [60]     	ld e, '#'
+091F: 1605     [67]     	ld d, DSP_DW
+0921: CD8F00   [84]     	call drawchar
+                        
+                        #endlocal
+0924: D1       [94]     	pop de
+0925: E1       [104]    	pop hl
+0926: C1       [114]    	pop bc
+0927: C9       [124]    	ret
+                        
+0928:                   draw_player_location:
+0928: 0640     [ 7]     	ld b, 64
+092A: 0E0B     [14]     	ld c, 11
+092C: CD2F01   [31]     	call set_carret_raw
+                        
+092F: 1605     [38]     	ld d, DSP_DW
+0931: 1E5B     [45]     	ld e, '['
+0933: CD8F00   [62]     	call drawchar
+                        
+0936: 3A8508   [75]     	ld a, (xpos)
+0939: CDBC04   [92]     	call OutHex
+                        
+093C: 1E2C     [99]     	ld e, ','
+093E: CD8F00   [116]    	call drawchar
+                        
+0941: 3A8608   [129]    	ld a, (ypos)
+0944: CDBC04   [146]    	call OutHex
+                        
+0947: 1605     [153]    	ld d, DSP_DW
+0949: 1E5D     [160]    	ld e, ']'
+094B: CD8F00   [177]    	call drawchar
+                        
+094E: C9       [187]    	ret	
+                        
+094F:                   main:
+094F: CD0A01   [17]     	call cleardisplay
+0952: CDFB08   [34]     	call reset_pos
+0955: CDD804   [51]     	call disablecursor
+                        
+                        
+0958:                   runloop:
+0958: CD0A01   [17]     	call cleardisplay
+                        
+095B: CDBB08   [34]     	call output_keycode
+                        
+                        	; render
+095E: CD2809   [51]     	call draw_player_location
+0961: CD0809   [68]     	call draw_player
+                        
+                        	; wait for input
+                        	; call wait_keystroke
+                        
+0964: CD3905   [85]     	call wait_ps2_scancode
+0967: CD7309   [102]    	call scancode_to_keystroke
+                        
+                        	; move
+096A: CDDB08   [119]    	call move
+                        
+096D: C35809   [129]    	jp runloop
+                        
+0970:                   exit:
+                        	;halt
+0970: C35B03   [10]     	jp app_ret
+                        
+                        
+0973:                   scancode_to_keystroke:
+0973: E5       [11]     	push hl
+0974: D5       [22]     	push de
+0975: C5       [33]     	push bc
+                        
+                        	; test only => copy pure scancode into keystroke
+0976: 113E08   [43]     	ld de, keystroke
+0979: 214208   [53]     	ld hl, scancode
+097C: 0600     [60]     	ld b, 0
+097E: 0E04     [67]     	ld c, 4
+0980: EDB0     [83|21]  	ldir
+                        
+0982: C1       [93]     	pop bc
+0983: D1       [103]    	pop de
+0984: E1       [113]    	pop hl
+0985: C9       [123]    	ret
+                        
+                        
+
+
+; +++ segments +++
+
+#CODE _CODE    = $0882 =  2178,  size = $06FE =  1790
+
+; +++ global symbols +++
+
+DSP_DW               = $0005 =     5          move_around.z80:18
+DSP_IW               = $0001 =     1          move_around.z80:13 (unused)
+OutHex               = $04BC =  1212          move_around.z80:19
+_CODE                = $0882 =  2178  _CODE   move_around.z80:28 (unused)
+_CODE_end            = $0F80 =  3968  _CODE   move_around.z80:28 (unused)
+_CODE_size           = $06FE =  1790  _CODE   move_around.z80:28 (unused)
+app_ret              = $035B =   859          move_around.z80:9
+cleardisplay         = $010A =   266          move_around.z80:7
+disablecursor        = $04D8 =  1240          move_around.z80:20
+draw_player          = $0908 =  2312  _CODE   move_around.z80:150
+draw_player_location = $0928 =  2344  _CODE   move_around.z80:178
+drawchar             = $008F =   143          move_around.z80:6
+exit                 = $0970 =  2416  _CODE   move_around.z80:228 (unused)
+exwait               = $007B =   123          move_around.z80:4 (unused)
+keystroke            = $083E =  2110          move_around.z80:23
+longwait             = $0085 =   133          move_around.z80:5 (unused)
+main                 = $094F =  2383  _CODE   move_around.z80:202
+move                 = $08DB =  2267  _CODE   move_around.z80:114
+movedown             = $0896 =  2198  _CODE   move_around.z80:51
+moveleft             = $089F =  2207  _CODE   move_around.z80:59
+moveright            = $08A8 =  2216  _CODE   move_around.z80:67
+moveup               = $088D =  2189  _CODE   move_around.z80:43
+output_keycode       = $08BB =  2235  _CODE   move_around.z80:83
+pioout               = $008F =   143          move_around.z80:12
+raw_textout          = $00E4 =   228          move_around.z80:8 (unused)
+rawout               = $0887 =  2183  _CODE   move_around.z80:38 (unused)
+reset_2nd_line       = $08B1 =  2225  _CODE   move_around.z80:75 (unused)
+reset_pos            = $08FB =  2299  _CODE   move_around.z80:141
+runloop              = $0958 =  2392  _CODE   move_around.z80:208
+scancode             = $0842 =  2114          move_around.z80:24
+scancode_to_keystroke = $0973 =  2419  _CODE   move_around.z80:233
+set_carret_raw       = $012F =   303          move_around.z80:17
+wait                 = $006E =   110          move_around.z80:3 (unused)
+wait_ps2_scancode    = $0539 =  1337          move_around.z80:21
+wait_serial          = $0484 =  1156          move_around.z80:11 (unused)
+xpos                 = $0885 =  2181  _CODE   move_around.z80:35
+ypos                 = $0886 =  2182  _CODE   move_around.z80:36
+
+; +++ local symbols +++
+
+done    = $08D7 =  2263  _CODE   move_around.z80:106
+outcode = $08D0 =  2256  _CODE   move_around.z80:100
+
+; +++ local symbols +++
+
+
+; +++ local symbols +++
+
+moverow = $0911 =  2321  _CODE   move_around.z80:158
+
+
+total time: 0.0039 sec.
+no errors

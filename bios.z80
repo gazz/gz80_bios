@@ -41,7 +41,7 @@ SPADDR	equ 0x1000
 #code _CODE
 
 
-WELCOME .asciz 	"gz80, v0.1         "
+WELCOME .asciz 	"gz80, v0.2         "
 SHELL .asciz 	" >                  "
 
 TMP_APP_INIT defb 0xdf, 0xfd, 5, 0xab, 0xc8, 0x00, 0x00, 0x00
@@ -58,11 +58,11 @@ SERIAL_INIT
 
 #data _BIOS_RAM
 ; sub the same char from the last char to make it byte \00
-LCD1 defs 40
-LCD2 defs 40
+LCD1 defs 20
+LCD2 defs 20
 CARRET_POS defs 1
 DISP_LINE defs 1
-TMP_STR defs 40
+TMP_STR defs 20
 
 #data _WORK_RAM
 APP_LOC defs 0x700
@@ -701,7 +701,7 @@ app_ret:
 
 copy_screen_to_temp:
 	; hl should be
-	ld bc, 18
+	ld bc, 20
 	ld hl, LCD1
 	inc hl
 	inc hl
@@ -835,6 +835,7 @@ WAIT_HERE .ascii "Wait starts here!", 0x0
 main:
 	call initpio
 	call initdisplay
+	call init_ps2_keyboard
 	call initserial
 	call reset
 
@@ -847,3 +848,212 @@ runloop:
 	jp runloop
 
 	halt
+
+
+; serial & keyboard input
+
+; move to BIOS
+OutHex:
+	push bc
+	push de
+	push af
+	call NumToHex
+	ld bc, de
+	ld d, DSP_DW
+
+#local
+	ld a, b
+	sub a, 48
+	jp z, singlechar
+
+	ld e, b
+	call pioout
+
+singlechar:
+	ld e, c
+	call pioout
+#endlocal
+
+	pop af
+	pop de
+	pop bc
+	ret
+
+
+; TODO: move to BIOS
+disablecursor:
+	; hide cursor
+	ld d, DSP_IW
+	ld e, 0b00001100
+	call pioout
+	ret
+
+; move to BIOS
+#data _BIOS_RAM
+keystroke defs 4, 00h
+#code _CODE
+wait_keystroke:
+	push hl
+	push bc
+	push de
+	ld hl, keystroke
+#local	
+	ld (hl), 3
+	inc hl
+	ld (hl), 0
+	inc hl
+	ld (hl), 0
+	inc hl
+	ld (hl), 0
+	ld hl, keystroke
+
+; we wait for at least one keycode
+poll:
+	in a, (SERAC)
+	bit 0, a
+	jr z, poll
+
+	ld b, 0
+	inc b
+	; we have a valid first code so increment hl[0] to 1
+	; load the code into hl[1]
+	inc hl
+	in a, (SERA)
+	ld (hl), a
+
+	;jp done
+	; is there a 2nd keycode right away?
+	in a, (SERAC)
+	bit 0, a
+	jp z, done
+
+	inc b
+	inc hl
+
+	in a, (SERA)
+	ld (hl), a
+
+	; is there a 3rd keycode right away?
+	in a, (SERAC)
+	bit 0, a
+	jp z, done
+
+	inc b
+	inc hl
+
+	in a, (SERA)
+	ld (hl), a
+
+done:
+#endlocal
+	ld hl, keystroke
+	ld (hl), b
+	pop de
+	pop bc
+	pop hl
+	ret
+
+
+PS2_SERIAL_INIT
+	defb 0, 0b00011000	; WR0, channel reset
+	defb 4, 0b00000101  ; WR4, odd parity, 1 stop bit, x1 clock mode coming from keyboard
+	defb 3, 0b11000001	; WR3, Rx enable, Rx 8 bits /char
+	defb 5, 0b01101000	; WR5, Tx enable, Tx 8 bitts char
+	defb 1, 0b10000000	; WR1, Wait/Ready on R/T enable 
+
+init_ps2_keyboard:
+	push hl
+	push bc
+
+	ld hl, PS2_SERIAL_INIT
+	ld b, 10	; size of serial init code 5 registers(a byte address) x 1 byte config
+	ld c, SERBC
+	otir
+
+	pop bc
+	pop hl
+	ret
+
+; waits on a scancode via serial port B that is wired up to PS/2 keyboard
+#data _BIOS_RAM
+scancode defs 4, 00h
+#code _CODE
+wait_ps2_scancode:
+	push hl
+	push bc
+	push de
+	ld hl, scancode
+	ld (hl), 3
+	inc hl
+	ld (hl), 0
+	inc hl
+	ld (hl), 0
+	inc hl
+	ld (hl), 0
+	ld hl, scancode
+
+#local
+	jp poll
+
+sink_break_code:
+	in a, (SERBC)
+	bit 0, a
+	jr z, sink_break_code
+
+	in a, (SERB)
+	pop af
+	jp done
+
+poll:
+	in a, (SERBC)
+	bit 0, a
+	jr z, poll
+
+	ld b, 0
+	inc b
+	; we have a valid first code so increment hl[0] to 1
+	; load the code into hl[1]
+	inc hl
+	in a, (SERB)
+
+	push af
+	; ignore break codes
+	sub 0xf0
+	jp z, sink_break_code
+	pop af
+
+	; real scancode
+	ld (hl), a
+
+	;jp done
+	; is there a 2nd scancode right away?
+	in a, (SERBC)
+	bit 0, a
+	jp z, done
+
+	inc b
+	inc hl
+
+	in a, (SERB)
+	ld (hl), a
+
+	; is there a 3rd scancode right away?
+	in a, (SERBC)
+	bit 0, a
+	jp z, done
+
+	inc b
+	inc hl
+
+	in a, (SERB)
+	ld (hl), a
+
+done:
+	ld hl, scancode
+	ld (hl), b
+#endlocal
+	pop de
+	pop bc
+	pop hl
+	ret
+
