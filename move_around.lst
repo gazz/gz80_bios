@@ -1,33 +1,24 @@
                         ; --------------------------------------
                         ; zasm: assemble "move_around.z80"
-                        ; date: 2020-06-19 21:19:00
+                        ; date: 2020-06-19 23:07:07
                         ; --------------------------------------
 
 
                         
-                        ;longwait equ 0x10
-006E:                   wait equ 0x6E
-007B:                   exwait equ $007B
-0085:                   longwait equ 0x85
-008F:                   drawchar equ 0x8F
-010A:                   cleardisplay equ 0x10a
-00E4:                   raw_textout equ 0xe4
-035B:                   app_ret equ 0x35b
-                        ; loads serial input into E register
-0484:                   wait_serial equ 0x484
-008F:                   pioout equ $008F
-0001:                   DSP_IW equ 0b00000001
-                        ; set carret anywhere on the screen
+00F7:                   ClearDisplay equ 0xf7
+007C:                   PIOOut equ 0x7c
+0348:                   ApplicationReturn equ 0x348
+                        ; set caret anywhere on the screen
                         ; b - offset, 64 (0x40) is 2nd line
                         ; c - offset on the line
-012F:                   set_carret_raw equ 0x12F
-0005:                   DSP_DW	equ	0b00000101
-04BC:                   OutHex equ $04BC
-04D8:                   disablecursor equ $04D8
-0539:                   wait_ps2_scancode equ $0539
+011C:                   SetCaretRaw equ 0x11C
+0005:                   DSP_DW	equ	0x5
+047B:                   OutHex equ $047B
+0497:                   DisableCursor equ $0497
+04F8:                   Wait_PS2ScanCode equ $04F8
                         ; there are RAM mapped
-083E:                   keystroke equ $083E
-0842:                   scancode equ $0842
+083E:                   STATE_KEYSTROKE equ $083E
+0842:                   STATE_SCANCODE equ $0842
                         
                         
                         
@@ -43,7 +34,7 @@
                         
 0887:                   rawout:
 0887: 1605     [ 7]     	ld d, DSP_DW
-0889: CD8F00   [24]     	call pioout
+0889: CD7C00   [24]     	call PIOOut
 088C: C9       [34]     	ret
                         
 088D:                   moveup:
@@ -82,7 +73,7 @@
 08B1: C5       [11]     	push bc
 08B2: 0640     [18]     	ld b, 64
 08B4: 0E00     [25]     	ld c, 0
-08B6: CD2F01   [42]     	call set_carret_raw
+08B6: CD1C01   [42]     	call SetCaretRaw
 08B9: C1       [52]     	pop bc
 08BA: C9       [62]     	ret
                         
@@ -94,9 +85,9 @@
                         	; output currently pressed key code on the 2nd line of lcd
 08BE: 0640     [40]     	ld b, 64
 08C0: 0E00     [47]     	ld c, 0
-08C2: CD2F01   [64]     	call set_carret_raw
+08C2: CD1C01   [64]     	call SetCaretRaw
                         
-08C5: 213E08   [74]     	ld hl, keystroke
+08C5: 213E08   [74]     	ld hl, STATE_KEYSTROKE
                         	; quick check if we have any keystroke chars
 08C8: 7E       [81]     	ld a, (hl)
 08C9: F600     [88]     	or 0
@@ -105,7 +96,7 @@
 08CF: 23       [108]    	inc hl
 08D0:                   outcode:	
 08D0: 7E       [ 7]     	ld a, (hl)
-08D1: CDBC04   [24]     	call OutHex
+08D1: CD7B04   [24]     	call OutHex
 08D4: 23       [30]     	inc hl
 08D5: 10F9     [38|43]  	djnz outcode
                         
@@ -119,7 +110,7 @@
                         
 08DB:                   move:
                         #local
-08DB: 3A3F08   [13]     	ld a, (keystroke + 1)
+08DB: 3A3F08   [13]     	ld a, (STATE_KEYSTROKE + 1)
                         
 08DE: F5       [24]     	push af
 08DF: D66B     [31]     	sub 6bh
@@ -169,11 +160,11 @@
 0916: 218508   [29]     	ld hl, xpos
 0919: 4E       [36]     	ld c, (hl)
                         
-091A: CD2F01   [53]     	call set_carret_raw
+091A: CD1C01   [53]     	call SetCaretRaw
                         
 091D: 1E23     [60]     	ld e, '#'
 091F: 1605     [67]     	ld d, DSP_DW
-0921: CD8F00   [84]     	call drawchar
+0921: CD7C00   [84]     	call PIOOut
                         
                         #endlocal
 0924: D1       [94]     	pop de
@@ -184,75 +175,83 @@
 0928:                   draw_player_location:
 0928: 0640     [ 7]     	ld b, 64
 092A: 0E0B     [14]     	ld c, 11
-092C: CD2F01   [31]     	call set_carret_raw
+092C: CD1C01   [31]     	call SetCaretRaw
                         
 092F: 1605     [38]     	ld d, DSP_DW
 0931: 1E5B     [45]     	ld e, '['
-0933: CD8F00   [62]     	call drawchar
+0933: CD7C00   [62]     	call PIOOut
                         
 0936: 3A8508   [75]     	ld a, (xpos)
-0939: CDBC04   [92]     	call OutHex
+0939: CD7B04   [92]     	call OutHex
                         
 093C: 1E2C     [99]     	ld e, ','
-093E: CD8F00   [116]    	call drawchar
+093E: CD7C00   [116]    	call PIOOut
                         
 0941: 3A8608   [129]    	ld a, (ypos)
-0944: CDBC04   [146]    	call OutHex
+0944: CD7B04   [146]    	call OutHex
                         
 0947: 1605     [153]    	ld d, DSP_DW
 0949: 1E5D     [160]    	ld e, ']'
-094B: CD8F00   [177]    	call drawchar
+094B: CD7C00   [177]    	call PIOOut
                         
 094E: C9       [187]    	ret	
                         
 094F:                   main:
-094F: CD0A01   [17]     	call cleardisplay
-0952: CDFB08   [34]     	call reset_pos
-0955: CDD804   [51]     	call disablecursor
+094F: 213E08   [10]     	ld hl, STATE_KEYSTROKE
+0952: 3600     [20]     	ld (hl), 0
+0954: CDF700   [37]     	call ClearDisplay
+0957: CDFB08   [54]     	call reset_pos
+095A: CD9704   [71]     	call DisableCursor
                         
                         
-0958:                   runloop:
-0958: CD0A01   [17]     	call cleardisplay
+095D:                   runloop:
+095D: CDF700   [17]     	call ClearDisplay
                         
-095B: CDBB08   [34]     	call output_keycode
+0960: CDBB08   [34]     	call output_keycode
                         
                         	; render
-095E: CD2809   [51]     	call draw_player_location
-0961: CD0809   [68]     	call draw_player
+0963: CD2809   [51]     	call draw_player_location
+0966: CD0809   [68]     	call draw_player
                         
                         	; wait for input
                         	; call wait_keystroke
                         
-0964: CD3905   [85]     	call wait_ps2_scancode
-0967: CD7309   [102]    	call scancode_to_keystroke
+0969: CDF804   [85]     	call Wait_PS2ScanCode
+096C: CD7909   [102]    	call scancode_to_keystroke
                         
                         	; move
-096A: CDDB08   [119]    	call move
+096F: CDDB08   [119]    	call move
                         
-096D: C35809   [129]    	jp runloop
+0972: C35D09   [129]    	jp runloop
                         
-0970:                   exit:
+0975:                   exit:
                         	;halt
-0970: C35B03   [10]     	jp app_ret
+0975: C34803   [10]     	jp ApplicationReturn
                         
                         
-0973:                   scancode_to_keystroke:
-0973: E5       [11]     	push hl
-0974: D5       [22]     	push de
-0975: C5       [33]     	push bc
+0978:                   write_player_char_to_cgram:
+                        	; CGRAM address is b0000*000..b0000*111 is custom chars
+                        	; that gives us 0x00..0x7, so 8 custom characters in CGRAM
+                        
+0978: C9       [10]     	ret
+                        
+                        
+0979:                   scancode_to_keystroke:
+0979: E5       [11]     	push hl
+097A: D5       [22]     	push de
+097B: C5       [33]     	push bc
                         
                         	; test only => copy pure scancode into keystroke
-0976: 113E08   [43]     	ld de, keystroke
-0979: 214208   [53]     	ld hl, scancode
-097C: 0600     [60]     	ld b, 0
-097E: 0E04     [67]     	ld c, 4
-0980: EDB0     [83|21]  	ldir
+097C: 113E08   [43]     	ld de, STATE_KEYSTROKE
+097F: 214208   [53]     	ld hl, STATE_SCANCODE
+0982: 0600     [60]     	ld b, 0
+0984: 0E04     [67]     	ld c, 4
+0986: EDB0     [83|21]  	ldir
                         
-0982: C1       [93]     	pop bc
-0983: D1       [103]    	pop de
-0984: E1       [113]    	pop hl
-0985: C9       [123]    	ret
-                        
+0988: C1       [93]     	pop bc
+0989: D1       [103]    	pop de
+098A: E1       [113]    	pop hl
+098B: C9       [123]    	ret
                         
 
 
@@ -262,56 +261,50 @@
 
 ; +++ global symbols +++
 
-DSP_DW               = $0005 =     5          move_around.z80:18
-DSP_IW               = $0001 =     1          move_around.z80:13 (unused)
-OutHex               = $04BC =  1212          move_around.z80:19
-_CODE                = $0882 =  2178  _CODE   move_around.z80:28 (unused)
-_CODE_end            = $0F80 =  3968  _CODE   move_around.z80:28 (unused)
-_CODE_size           = $06FE =  1790  _CODE   move_around.z80:28 (unused)
-app_ret              = $035B =   859          move_around.z80:9
-cleardisplay         = $010A =   266          move_around.z80:7
-disablecursor        = $04D8 =  1240          move_around.z80:20
-draw_player          = $0908 =  2312  _CODE   move_around.z80:150
-draw_player_location = $0928 =  2344  _CODE   move_around.z80:178
-drawchar             = $008F =   143          move_around.z80:6
-exit                 = $0970 =  2416  _CODE   move_around.z80:228 (unused)
-exwait               = $007B =   123          move_around.z80:4 (unused)
-keystroke            = $083E =  2110          move_around.z80:23
-longwait             = $0085 =   133          move_around.z80:5 (unused)
-main                 = $094F =  2383  _CODE   move_around.z80:202
-move                 = $08DB =  2267  _CODE   move_around.z80:114
-movedown             = $0896 =  2198  _CODE   move_around.z80:51
-moveleft             = $089F =  2207  _CODE   move_around.z80:59
-moveright            = $08A8 =  2216  _CODE   move_around.z80:67
-moveup               = $088D =  2189  _CODE   move_around.z80:43
-output_keycode       = $08BB =  2235  _CODE   move_around.z80:83
-pioout               = $008F =   143          move_around.z80:12
-raw_textout          = $00E4 =   228          move_around.z80:8 (unused)
-rawout               = $0887 =  2183  _CODE   move_around.z80:38 (unused)
-reset_2nd_line       = $08B1 =  2225  _CODE   move_around.z80:75 (unused)
-reset_pos            = $08FB =  2299  _CODE   move_around.z80:141
-runloop              = $0958 =  2392  _CODE   move_around.z80:208
-scancode             = $0842 =  2114          move_around.z80:24
-scancode_to_keystroke = $0973 =  2419  _CODE   move_around.z80:233
-set_carret_raw       = $012F =   303          move_around.z80:17
-wait                 = $006E =   110          move_around.z80:3 (unused)
-wait_ps2_scancode    = $0539 =  1337          move_around.z80:21
-wait_serial          = $0484 =  1156          move_around.z80:11 (unused)
-xpos                 = $0885 =  2181  _CODE   move_around.z80:35
-ypos                 = $0886 =  2182  _CODE   move_around.z80:36
+ApplicationReturn     = $0348 =   840          move_around.z80:4
+ClearDisplay          = $00F7 =   247          move_around.z80:2
+DSP_DW                = $0005 =     5          move_around.z80:9
+DisableCursor         = $0497 =  1175          move_around.z80:11
+OutHex                = $047B =  1147          move_around.z80:10
+PIOOut                = $007C =   124          move_around.z80:3
+STATE_KEYSTROKE       = $083E =  2110          move_around.z80:14
+STATE_SCANCODE        = $0842 =  2114          move_around.z80:15
+SetCaretRaw           = $011C =   284          move_around.z80:8
+Wait_PS2ScanCode      = $04F8 =  1272          move_around.z80:12
+_CODE                 = $0882 =  2178  _CODE   move_around.z80:19 (unused)
+_CODE_end             = $0F80 =  3968  _CODE   move_around.z80:19 (unused)
+_CODE_size            = $06FE =  1790  _CODE   move_around.z80:19 (unused)
+draw_player           = $0908 =  2312  _CODE   move_around.z80:141
+draw_player_location  = $0928 =  2344  _CODE   move_around.z80:169
+exit                  = $0975 =  2421  _CODE   move_around.z80:221 (unused)
+main                  = $094F =  2383  _CODE   move_around.z80:193
+move                  = $08DB =  2267  _CODE   move_around.z80:105
+movedown              = $0896 =  2198  _CODE   move_around.z80:42
+moveleft              = $089F =  2207  _CODE   move_around.z80:50
+moveright             = $08A8 =  2216  _CODE   move_around.z80:58
+moveup                = $088D =  2189  _CODE   move_around.z80:34
+output_keycode        = $08BB =  2235  _CODE   move_around.z80:74
+rawout                = $0887 =  2183  _CODE   move_around.z80:29 (unused)
+reset_2nd_line        = $08B1 =  2225  _CODE   move_around.z80:66 (unused)
+reset_pos             = $08FB =  2299  _CODE   move_around.z80:132
+runloop               = $095D =  2397  _CODE   move_around.z80:201
+scancode_to_keystroke = $0979 =  2425  _CODE   move_around.z80:233
+write_player_char_to_cgram = $0978 =  2424  _CODE   move_around.z80:226 (unused)
+xpos                  = $0885 =  2181  _CODE   move_around.z80:26
+ypos                  = $0886 =  2182  _CODE   move_around.z80:27
 
 ; +++ local symbols +++
 
-done    = $08D7 =  2263  _CODE   move_around.z80:106
-outcode = $08D0 =  2256  _CODE   move_around.z80:100
+done    = $08D7 =  2263  _CODE   move_around.z80:97
+outcode = $08D0 =  2256  _CODE   move_around.z80:91
 
 ; +++ local symbols +++
 
 
 ; +++ local symbols +++
 
-moverow = $0911 =  2321  _CODE   move_around.z80:158
+moverow = $0911 =  2321  _CODE   move_around.z80:149
 
 
-total time: 0.0039 sec.
+total time: 0.0036 sec.
 no errors

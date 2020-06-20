@@ -1,6 +1,6 @@
                         ; --------------------------------------
                         ; zasm: assemble "bios.z80"
-                        ; date: 2020-06-19 21:17:48
+                        ; date: 2020-06-19 22:50:37
                         ; --------------------------------------
 
 
@@ -26,7 +26,7 @@
 0000:                   #code _BOOT
 0013:                   #code _GSINIT
 0013:                   #code _CODE
-0590:                   #code _END, *, 0x800 - _CODE_end
+0575:                   #code _END, *, 0x800 - _CODE_end
 0800:                   #data _BIOS_RAM, 0x800, 0x80
 0880:                   #data _WORK_RAM, *, 0x700
 0F80:                   #data _STACK_RAM, *, 0x80
@@ -36,44 +36,37 @@
 0000: 210010   [10]     	ld hl, SPADDR
 0003: F9       [16]     	ld sp, hl
                         
-0004: 213C00   [26]     	ld hl, TMP_APP_INIT
+0004: 213B00   [26]     	ld hl, TMP_APP_INIT
 0007: 118008   [36]     	ld de, APP_LOC
 000A: 010800   [46]     	ld bc, 8
 000D: EDB0     [62|21]  	ldir
                         
-000F: C3A004   [72]     	jp main
+000F: C34F05   [72]     	jp main
 0012: 76       [76]     	halt
                         
                         #code _CODE
                         
                         
-0013: 677A3830          WELCOME .asciz 	"gz80, v0.2         "
+0013: 677A3830          WELCOME .asciz 	"gz80, v0.21        "
 0017: 2C207630          
-001B: 2E322020          
+001B: 2E323120          
 001F: 20202020          
 0023: 20202000          
-0027: 203E2020          SHELL .asciz 	" >                  "
+0027: 203E2020          SHELL .asciz 	" >                 "
 002B: 20202020          
 002F: 20202020          
 0033: 20202020          
-0037: 20202020          
-003B: 00                
+0037: 20202000          
                         
-003C: DFFD05AB          TMP_APP_INIT defb 0xdf, 0xfd, 5, 0xab, 0xc8, 0x00, 0x00, 0x00
-0040: C8000000          
+003B: DFFD05AB          TMP_APP_INIT defb 0xdf, 0xfd, 5, 0xab, 0xc8, 0x00, 0x00, 0x00
+003F: C8000000          
                         
-0044: 4B617320          SER_LINE0 .ascii "Kas augshaa!", 0x00
-0048: 61756773          
-004C: 68616121          
-0050: 00                
-                        
-                        
-0051:                   SERIAL_INIT
-0051: 0018              	defb 0, 0b00011000	; WR0, channel reset
-0053: 04C4              	defb 4, 0b11000100  ; WR4, no parity, 1 stop bit, x64 clock mode
-0055: 03C1              	defb 3, 0b11000001	; WR3, Rx enable, Rx 8 bits /char
-0057: 0568              	defb 5, 0b01101000	; WR5, Tx enable, Tx 8 bitts char
-0059: 0180              	defb 1, 0b10000000	; WR1, Wait/Ready on R/T enable 
+0043:                   SERIAL_INIT
+0043: 0018              	defb 0, 0b00011000	; WR0, channel reset
+0045: 04C4              	defb 4, 0b11000100  ; WR4, no parity, 1 stop bit, x64 clock mode
+0047: 03C1              	defb 3, 0b11000001	; WR3, Rx enable, Rx 8 bits /char
+0049: 0568              	defb 5, 0b01101000	; WR5, Tx enable, Tx 8 bitts char
+004B: 0180              	defb 1, 0b10000000	; WR1, Wait/Ready on R/T enable 
                         
                         #data _BIOS_RAM
                         ; sub the same char from the last char to make it byte \00
@@ -92,1016 +85,1016 @@
                         
                         #code _CODE
                         
-005B:                   initpio:
+004D:                   initpio:
                         	; set ouput mode on PIO 
-005B: 3E0F     [ 7]     	ld a, 0xf	; b00001111 is control byte for output
+004D: 3E0F     [ 7]     	ld a, 0xf	; b00001111 is control byte for output
                         	; b1 addresses pio in command mode
-005D: D306     [18]     	out PORTAC, a
-005F: D307     [29]     	out PORTBC, a
-0061: C9       [39]     	ret
+004F: D306     [18]     	out PORTAC, a
+0051: D307     [29]     	out PORTBC, a
+0053: C9       [39]     	ret
                         
-0062:                   initserial:
-0062: E5       [11]     	push hl
-0063: 215100   [21]     	ld hl, SERIAL_INIT
-0066: 060A     [28]     	ld b, 10	; size of serial init code 5 registers(a byte address) x 1 byte config
-0068: 0E0A     [35]     	ld c, SERAC
-006A: EDB3     [51|21]  	otir
+0054:                   initserial:
+0054: E5       [11]     	push hl
+0055: 214300   [21]     	ld hl, SERIAL_INIT
+0058: 060A     [28]     	ld b, 10	; size of serial init code 5 registers(a byte address) x 1 byte config
+005A: 0E0A     [35]     	ld c, SERAC
+005C: EDB3     [51|21]  	otir
                         
-006C: E1       [61]     	pop hl
-006D: C9       [71]     	ret
+005E: E1       [61]     	pop hl
+005F: C9       [71]     	ret
                         
-006E:                   wait:
-006E: E5       [11]     	push hl
-006F: 218E04   [21]     	ld hl, WAIT_HERE
-0072: E1       [31]     	pop hl
-0073: C5       [42]     	push bc
-0074: 06FF     [49]     	ld b, 255
+0060:                   wait:
+0060: C5       [11]     	push bc
+0061: 06FF     [18]     	ld b, 255
                         #local
-0076:                   wloop:
-0076: 00       [ 4]     	nop
-0077: 10FD     [12|17]  	djnz wloop
+0063:                   wloop:
+0063: 00       [ 4]     	nop
+0064: 10FD     [12|17]  	djnz wloop
                         #endlocal
-0079: C1       [22]     	pop bc
-007A: C9       [32]     	ret
+0066: C1       [22]     	pop bc
+0067: C9       [32]     	ret
                         
                         ; wait for 255^2 machine cycles
-007B:                   exwait:
-007B: C5       [11]     	push bc
-007C: 06FF     [18]     	ld b, 255
+0068:                   exwait:
+0068: C5       [11]     	push bc
+0069: 06FF     [18]     	ld b, 255
                         #local
-007E:                   eloop:
-007E: CD6E00   [17]     	call wait
-0081: 10FB     [25|30]  	djnz eloop
+006B:                   eloop:
+006B: CD6000   [17]     	call wait
+006E: 10FB     [25|30]  	djnz eloop
                         #endlocal
-0083: C1       [35]     	pop bc
-0084: C9       [45]     	ret
+0070: C1       [35]     	pop bc
+0071: C9       [45]     	ret
                         
                         ; wait for 255^2*5 machine cycles
-0085:                   longwait:
-0085: C5       [11]     	push bc
-0086: 0605     [18]     	ld b, 5
+0072:                   longwait:
+0072: C5       [11]     	push bc
+0073: 0605     [18]     	ld b, 5
                         #local
-0088:                   lloop:
-0088: CD7B00   [17]     	call exwait
-008B: 10FB     [25|30]  	djnz lloop
+0075:                   lloop:
+0075: CD6800   [17]     	call exwait
+0078: 10FB     [25|30]  	djnz lloop
                         #endlocal
-008D: C1       [35]     	pop bc
-008E: C9       [45]     	ret
+007A: C1       [35]     	pop bc
+007B: C9       [45]     	ret
                         
                         
-008F:                   pioout:
+007C:                   pioout:
                         	; output to pio
-008F: 7A       [ 4]     	ld a, d
-0090: D305     [15]     	out PORTB, a
-0092: 7B       [19]     	ld a, e
-0093: D304     [30]     	out PORTA, a
-0095: 3E00     [37]     	ld a, 0
-0097: D305     [48]     	out PORTB, a
-0099: CD6E00   [65]     	call wait
-009C: C9       [75]     	ret
+007C: 7A       [ 4]     	ld a, d
+007D: D305     [15]     	out PORTB, a
+007F: 7B       [19]     	ld a, e
+0080: D304     [30]     	out PORTA, a
+0082: 3E00     [37]     	ld a, 0
+0084: D305     [48]     	out PORTB, a
+0086: CD6000   [65]     	call wait
+0089: C9       [75]     	ret
                         
-009D:                   sioout:
-009D: 7B       [ 4]     	ld a, e
-009E: D308     [15]     	out SERA, a
-00A0: C9       [25]     	ret
+008A:                   sioout:
+008A: 7B       [ 4]     	ld a, e
+008B: D308     [15]     	out SERA, a
+008D: C9       [25]     	ret
                         
-00A1:                   charout:
-00A1: F5       [11]     	push af
-00A2: C5       [22]     	push bc
-00A3: E5       [33]     	push hl
+008E:                   charout:
+008E: F5       [11]     	push af
+008F: C5       [22]     	push bc
+0090: E5       [33]     	push hl
                         	; check if new line, then do line feed instead
-00A4: 7B       [37]     	ld a, e
-00A5: D60D     [44]     	sub 13
-00A7: CACD00   [54|54]  	jp z, skip
+0091: 7B       [37]     	ld a, e
+0092: D60D     [44]     	sub 13
+0094: CABA00   [54|54]  	jp z, skip
                         
-00AA: 7B       [58]     	ld a, e
-00AB: D608     [65]     	sub 8
-00AD: CACD00   [75|75]  	jp z, backspace
+0097: 7B       [58]     	ld a, e
+0098: D608     [65]     	sub 8
+009A: CABA00   [75|75]  	jp z, backspace
                         
-00B0: 7B       [79]     	ld a, e
-00B1: D60A     [86]     	sub 10
-00B3: CAD100   [96|96]  	jp z, newline_char
+009D: 7B       [79]     	ld a, e
+009E: D60A     [86]     	sub 10
+00A0: CABE00   [96|96]  	jp z, newline_char
                         
                         	; display out
-00B6: 1605     [103]    	ld d, DSP_DW
-00B8: CD8F00   [120]    	call pioout
+00A3: 1605     [103]    	ld d, DSP_DW
+00A5: CD7C00   [120]    	call pioout
                         	; serial out
                         
-00BB: CD9D00   [137]    	call sioout
+00A8: CD8A00   [137]    	call sioout
                         
-00BE: 212808   [147]    	ld hl, CARRET_POS
-00C1: 0600     [154]    	ld b, 0
-00C3: 4E       [161]    	ld c, (hl)
-00C4: 211408   [171]    	ld hl, LCD2
-00C7: 09       [182]    	add hl, bc
-00C8: 73       [189]    	ld (hl), e
+00AB: 212808   [147]    	ld hl, CARRET_POS
+00AE: 0600     [154]    	ld b, 0
+00B0: 4E       [161]    	ld c, (hl)
+00B1: 211408   [171]    	ld hl, LCD2
+00B4: 09       [182]    	add hl, bc
+00B5: 73       [189]    	ld (hl), e
                         	
-00C9: 212808   [199]    	ld hl, CARRET_POS
-00CC: 34       [210]    	inc (hl)
+00B6: 212808   [199]    	ld hl, CARRET_POS
+00B9: 34       [210]    	inc (hl)
                         
-00CD:                   skip:
-00CD:                   backspace:
-00CD: E1       [10]     	pop hl
-00CE: C1       [20]     	pop bc
-00CF: F1       [30]     	pop af
-00D0: C9       [40]     	ret
+00BA:                   skip:
+00BA:                   backspace:
+00BA: E1       [10]     	pop hl
+00BB: C1       [20]     	pop bc
+00BC: F1       [30]     	pop af
+00BD: C9       [40]     	ret
                         
-00D1:                   newline_char:
-00D1: CD6E01   [17]     	call line_feed
-00D4: C3CD00   [27]     	jp skip
+00BE:                   newline_char:
+00BE: CD5B01   [17]     	call line_feed
+00C1: C3BA00   [27]     	jp skip
                         
                         
-00D7:                   mstringout:
-00D7: 1605     [ 7]     	ld d, DSP_DW
-00D9:                   soutloop:
-00D9: 7E       [ 7]     	ld a, (hl)
-00DA: B7       [11]     	or a
-00DB: C8       [16|22]  	ret z
+00C4:                   mstringout:
+00C4: 1605     [ 7]     	ld d, DSP_DW
+00C6:                   soutloop:
+00C6: 7E       [ 7]     	ld a, (hl)
+00C7: B7       [11]     	or a
+00C8: C8       [16|22]  	ret z
                         
-00DC: 5E       [23]     	ld e, (hl)
-00DD: CDA100   [40]     	call charout
-00E0: 23       [46]     	inc hl
-00E1: C3D900   [56]     	jp soutloop
+00C9: 5E       [23]     	ld e, (hl)
+00CA: CD8E00   [40]     	call charout
+00CD: 23       [46]     	inc hl
+00CE: C3C600   [56]     	jp soutloop
                         
-00E4:                   raw_textout:
+00D1:                   raw_textout:
                         #local
-00E4: 1605     [ 7]     	ld d, DSP_DW
-00E6:                   nextchar:
-00E6: 7E       [ 7]     	ld a, (hl)
-00E7: B7       [11]     	or a
-00E8: C8       [16|22]  	ret z
+00D1: 1605     [ 7]     	ld d, DSP_DW
+00D3:                   nextchar:
+00D3: 7E       [ 7]     	ld a, (hl)
+00D4: B7       [11]     	or a
+00D5: C8       [16|22]  	ret z
                         
-00E9: 5E       [23]     	ld e, (hl)
-00EA: CD8F00   [40]     	call pioout
-00ED: 23       [46]     	inc hl
-00EE: C3E600   [56]     	jp nextchar
+00D6: 5E       [23]     	ld e, (hl)
+00D7: CD7C00   [40]     	call pioout
+00DA: 23       [46]     	inc hl
+00DB: C3D300   [56]     	jp nextchar
                         #endlocal
                         
-00F1:                   default_lcd_lines:
-00F1: E5       [11]     	push hl
-00F2: 011400   [21]     	ld bc, 20
-00F5: 110008   [31]     	ld de, LCD1
-00F8: 211300   [41]     	ld hl, WELCOME
-00FB: EDB0     [57|21]  	ldir
-00FD: 011400   [67]     	ld bc, 20
-0100: 111408   [77]     	ld de, LCD2
-0103: 212700   [87]     	ld hl, SHELL
-0106: EDB0     [103|21] 	ldir
-0108: E1       [113]    	pop hl
-0109: C9       [123]    	ret
+00DE:                   default_lcd_lines:
+00DE: E5       [11]     	push hl
+00DF: 011400   [21]     	ld bc, 20
+00E2: 110008   [31]     	ld de, LCD1
+00E5: 211300   [41]     	ld hl, WELCOME
+00E8: EDB0     [57|21]  	ldir
+00EA: 011400   [67]     	ld bc, 20
+00ED: 111408   [77]     	ld de, LCD2
+00F0: 212700   [87]     	ld hl, SHELL
+00F3: EDB0     [103|21] 	ldir
+00F5: E1       [113]    	pop hl
+00F6: C9       [123]    	ret
                         
-010A:                   cleardisplay:
+00F7:                   cleardisplay:
                         	; clear display
-010A: 1601     [ 7]     	ld d, DSP_IW
-010C: 1E01     [14]     	ld e, 0b00000001
-010E: CD8F00   [31]     	call pioout
-0111: CD6E00   [48]     	call wait
-0114: CD6E00   [65]     	call wait
-0117: C9       [75]     	ret
+00F7: 1601     [ 7]     	ld d, DSP_IW
+00F9: 1E01     [14]     	ld e, 0b00000001
+00FB: CD7C00   [31]     	call pioout
+00FE: CD6000   [48]     	call wait
+0101: CD6000   [65]     	call wait
+0104: C9       [75]     	ret
                         
-0118:                   set_carret_home:
-0118: E5       [11]     	push hl
-0119: 1601     [18]     	ld d, DSP_IW
-011B: 1E80     [25]     	ld e, 0b10000000
-011D: CD8F00   [42]     	call pioout
-0120: 212808   [52]     	ld hl, CARRET_POS
-0123: 3600     [62]     	ld (hl), 0	
-0125: E1       [72]     	pop hl
-0126: C9       [82]     	ret	
+0105:                   set_carret_home:
+0105: E5       [11]     	push hl
+0106: 1601     [18]     	ld d, DSP_IW
+0108: 1E80     [25]     	ld e, 0b10000000
+010A: CD7C00   [42]     	call pioout
+010D: 212808   [52]     	ld hl, CARRET_POS
+0110: 3600     [62]     	ld (hl), 0	
+0112: E1       [72]     	pop hl
+0113: C9       [82]     	ret	
                         
-0127:                   set_carret_2nd_line:
-0127: 1601     [ 7]     	ld d, DSP_IW
-0129: 1EC0     [14]     	ld e, 0b11000000
-012B: CD8F00   [31]     	call pioout
-012E: C9       [41]     	ret	
+0114:                   set_carret_2nd_line:
+0114: 1601     [ 7]     	ld d, DSP_IW
+0116: 1EC0     [14]     	ld e, 0b11000000
+0118: CD7C00   [31]     	call pioout
+011B: C9       [41]     	ret	
                         
-012F:                   set_carret_raw:
-012F: F5       [11]     	push af
+011C:                   set_carret_raw:
+011C: F5       [11]     	push af
                         	; b - offset, 64 (0x40) is 2nd line
                         	; c - offset on the line
-0130: 1601     [18]     	ld d, DSP_IW
-0132: 3E80     [25]     	ld a, 0x80
-0134: 80       [29]     	add b
-0135: 81       [33]     	add c
-0136: 5F       [37]     	ld e, a
-0137: CD8F00   [54]     	call pioout
-013A: F1       [64]     	pop af
-013B: C9       [74]     	ret
+011D: 1601     [18]     	ld d, DSP_IW
+011F: 3E80     [25]     	ld a, 0x80
+0121: 80       [29]     	add b
+0122: 81       [33]     	add c
+0123: 5F       [37]     	ld e, a
+0124: CD7C00   [54]     	call pioout
+0127: F1       [64]     	pop af
+0128: C9       [74]     	ret
                         
-013C:                   return_shell:
-013C: E5       [11]     	push hl
+0129:                   return_shell:
+0129: E5       [11]     	push hl
                         	; clear shell line
-013D: 011400   [21]     	ld bc, 20
-0140: 111408   [31]     	ld de, LCD2
-0143: 212700   [41]     	ld hl, SHELL
-0146: EDB0     [57|21]  	ldir
+012A: 011400   [21]     	ld bc, 20
+012D: 111408   [31]     	ld de, LCD2
+0130: 212700   [41]     	ld hl, SHELL
+0133: EDB0     [57|21]  	ldir
                         
-0148: CD2701   [74]     	call set_carret_2nd_line
-014B: 211408   [84]     	ld hl, LCD2
-014E: CDE400   [101]    	call raw_textout
+0135: CD1401   [74]     	call set_carret_2nd_line
+0138: 211408   [84]     	ld hl, LCD2
+013B: CDD100   [101]    	call raw_textout
                         
-0151: CD2701   [118]    	call set_carret_2nd_line
-0154: 212908   [128]    	ld hl, DISP_LINE
-0157: 7E       [135]    	ld a, (hl)
-0158: C630     [142]    	add 48
-015A: 1605     [149]    	ld d, DSP_DW
-015C: 5F       [153]    	ld e, a
-015D: CD8F00   [170]    	call pioout
+013E: CD1401   [118]    	call set_carret_2nd_line
+0141: 212908   [128]    	ld hl, DISP_LINE
+0144: 7E       [135]    	ld a, (hl)
+0145: C630     [142]    	add 48
+0147: 1605     [149]    	ld d, DSP_DW
+0149: 5F       [153]    	ld e, a
+014A: CD7C00   [170]    	call pioout
                         
                         	; position carret
-0160: 1601     [177]    	ld d, DSP_IW
-0162: 1EC2     [184]    	ld e, 0b11000010
-0164: CD8F00   [201]    	call pioout
+014D: 1601     [177]    	ld d, DSP_IW
+014F: 1EC2     [184]    	ld e, 0b11000010
+0151: CD7C00   [201]    	call pioout
                         
-0167: 212808   [211]    	ld hl, CARRET_POS
-016A: 3602     [221]    	ld (hl), 2
+0154: 212808   [211]    	ld hl, CARRET_POS
+0157: 3602     [221]    	ld (hl), 2
                         
-016C: E1       [231]    	pop hl
-016D: C9       [241]    	ret
+0159: E1       [231]    	pop hl
+015A: C9       [241]    	ret
                         
-016E:                   line_feed:
-016E: E5       [11]     	push hl
+015B:                   line_feed:
+015B: E5       [11]     	push hl
                         	; copy lcd2 into lcd1
-016F: 011400   [21]     	ld bc, 20
-0172: 211408   [31]     	ld hl, LCD2
-0175: 110008   [41]     	ld de, LCD1
-0178: EDB0     [57|21]  	ldir
+015C: 011400   [21]     	ld bc, 20
+015F: 211408   [31]     	ld hl, LCD2
+0162: 110008   [41]     	ld de, LCD1
+0165: EDB0     [57|21]  	ldir
                         
-017A: 3A2908   [70]     	ld a, (DISP_LINE)
-017D: C630     [77]     	add 48
-017F: 210008   [87]     	ld hl, LCD1
-0182: 77       [94]     	ld (hl), a
+0167: 3A2908   [70]     	ld a, (DISP_LINE)
+016A: C630     [77]     	add 48
+016C: 210008   [87]     	ld hl, LCD1
+016F: 77       [94]     	ld (hl), a
                         
-0183: 212908   [104]    	ld hl, DISP_LINE
-0186: 34       [115]    	inc (hl)
+0170: 212908   [104]    	ld hl, DISP_LINE
+0173: 34       [115]    	inc (hl)
                         
-0187: CD1801   [132]    	call set_carret_home
+0174: CD0501   [132]    	call set_carret_home
                         
-018A: 210008   [142]    	ld hl, LCD1
-018D: CDE400   [159]    	call raw_textout
+0177: 210008   [142]    	ld hl, LCD1
+017A: CDD100   [159]    	call raw_textout
                         
-0190: CD3C01   [176]    	call return_shell
-0193: E1       [186]    	pop hl
-0194: C9       [196]    	ret
+017D: CD2901   [176]    	call return_shell
+0180: E1       [186]    	pop hl
+0181: C9       [196]    	ret
                         
-0195:                   initdisplay:
+0182:                   initdisplay:
                         	; function set
-0195: 1601     [ 7]     	ld d, DSP_IW
-0197: 1E38     [14]     	ld e, 0b00111000
-0199: CD8F00   [31]     	call pioout
-019C: CD6E00   [48]     	call wait
-019F: CD6E00   [65]     	call wait
+0182: 1601     [ 7]     	ld d, DSP_IW
+0184: 1E38     [14]     	ld e, 0b00111000
+0186: CD7C00   [31]     	call pioout
+0189: CD6000   [48]     	call wait
+018C: CD6000   [65]     	call wait
                         
                         	; display on 
-01A2: 1601     [72]     	ld d, DSP_IW
-01A4: 1E0F     [79]     	ld e, 0b00001111
-01A6: CD8F00   [96]     	call pioout
-01A9: CD6E00   [113]    	call wait
-01AC: CD6E00   [130]    	call wait
+018F: 1601     [72]     	ld d, DSP_IW
+0191: 1E0F     [79]     	ld e, 0b00001111
+0193: CD7C00   [96]     	call pioout
+0196: CD6000   [113]    	call wait
+0199: CD6000   [130]    	call wait
                         
                         	; increment mode
-01AF: 1601     [137]    	ld d, DSP_IW
-01B1: 1E06     [144]    	ld e, 0b00000110
-01B3: CD8F00   [161]    	call pioout
-01B6: CD6E00   [178]    	call wait
-01B9: CD6E00   [195]    	call wait
+019C: 1601     [137]    	ld d, DSP_IW
+019E: 1E06     [144]    	ld e, 0b00000110
+01A0: CD7C00   [161]    	call pioout
+01A3: CD6000   [178]    	call wait
+01A6: CD6000   [195]    	call wait
                         
-01BC: CD0A01   [212]    	call cleardisplay
-01BF: C9       [222]    	ret
+01A9: CDF700   [212]    	call cleardisplay
+01AC: C9       [222]    	ret
                         
                         ;IN    HL     Address of string1.
                         ;      DE     Address of string2.
                         ;OUT   zero   Set if string1 = string2, reset if string1 != string2.
                         ;      carry  Set if string1 > string2, reset if string1 <= string2.
                         
-01C0:                   CmpStrings:
-01C0: E5       [11]         PUSH   HL
-01C1: D5       [22]         PUSH   DE
+01AD:                   CmpStrings:
+01AD: E5       [11]         PUSH   HL
+01AE: D5       [22]         PUSH   DE
                         
-01C2: 1A       [29]         LD     A, (DE)          ; Compare lengths to determine smaller string
-01C3: BE       [36]         CP     (HL)            ; (want to minimize work).
-01C4: 3801     [43|48]      JR     C, Str1IsBigger
-01C6: 7E       [50]         LD     A, (HL)
+01AF: 1A       [29]         LD     A, (DE)          ; Compare lengths to determine smaller string
+01B0: BE       [36]         CP     (HL)            ; (want to minimize work).
+01B1: 3801     [43|48]      JR     C, Str1IsBigger
+01B3: 7E       [50]         LD     A, (HL)
                         
-01C7:                   Str1IsBigger:
-01C7: 4F       [ 4]         LD     C, A             ; Put length in BC
-01C8: 0600     [11]         LD     B, 0
-01CA: 13       [17]         INC    DE              ; Increment pointers to meat of string.
-01CB: 23       [23]         INC    HL
+01B4:                   Str1IsBigger:
+01B4: 4F       [ 4]         LD     C, A             ; Put length in BC
+01B5: 0600     [11]         LD     B, 0
+01B7: 13       [17]         INC    DE              ; Increment pointers to meat of string.
+01B8: 23       [23]         INC    HL
                         
-01CC:                   CmpLoop:
-01CC: 1A       [ 7]         LD     A, (DE)          ; Compare bytes.
-01CD: EDA1     [23]         CPI
-01CF: 2009     [30|35]      JR     NZ, NoMatch      ; If (HL) != (DE), abort.
-01D1: 13       [36]         INC    DE              ; Update pointer.
-01D2: EACC01   [46|46]      JP     PE, CmpLoop
+01B9:                   CmpLoop:
+01B9: 1A       [ 7]         LD     A, (DE)          ; Compare bytes.
+01BA: EDA1     [23]         CPI
+01BC: 2009     [30|35]      JR     NZ, NoMatch      ; If (HL) != (DE), abort.
+01BE: 13       [36]         INC    DE              ; Update pointer.
+01BF: EAB901   [46|46]      JP     PE, CmpLoop
                         
-01D5: D1       [56]         POP    DE
-01D6: E1       [66]         POP    HL
-01D7: 1A       [73]         LD     A, (DE)          ; Check string lengths to see if really equal.
-01D8: BE       [80]         CP     (HL)
-01D9: C9       [90]         RET
+01C2: D1       [56]         POP    DE
+01C3: E1       [66]         POP    HL
+01C4: 1A       [73]         LD     A, (DE)          ; Check string lengths to see if really equal.
+01C5: BE       [80]         CP     (HL)
+01C6: C9       [90]         RET
                         
-01DA:                   NoMatch:
-01DA: 2B       [ 6]         DEC    HL
-01DB: BE       [13]         CP     (HL)            ; Compare again to affect carry.
-01DC: D1       [23]         POP    DE
-01DD: E1       [33]         POP    HL
-01DE: C9       [43]         RET
+01C7:                   NoMatch:
+01C7: 2B       [ 6]         DEC    HL
+01C8: BE       [13]         CP     (HL)            ; Compare again to affect carry.
+01C9: D1       [23]         POP    DE
+01CA: E1       [33]         POP    HL
+01CB: C9       [43]         RET
                         
-01DF:                   reset:
-01DF: CDF100   [17]     	call default_lcd_lines
-01E2: 212908   [27]     	ld hl, DISP_LINE
-01E5: 3600     [37]     	ld (hl), 0
+01CC:                   reset:
+01CC: CDDE00   [17]     	call default_lcd_lines
+01CF: 212908   [27]     	ld hl, DISP_LINE
+01D2: 3600     [37]     	ld (hl), 0
                         	; this is the first init
-01E7: CD1801   [54]     	call set_carret_home
-01EA: 210008   [64]     	ld hl, LCD1
-01ED: CDE400   [81]     	call raw_textout
-01F0: CD3C01   [98]     	call return_shell
-01F3: C9       [108]    	ret
+01D4: CD0501   [54]     	call set_carret_home
+01D7: 210008   [64]     	ld hl, LCD1
+01DA: CDD100   [81]     	call raw_textout
+01DD: CD2901   [98]     	call return_shell
+01E0: C9       [108]    	ret
                         
                         
-01F4: 4C6F6164          LOAD_TITLE1 .asciz "Loading programm:"
-01F8: 696E6720          
-01FC: 70726F67          
-0200: 72616D6D          
-0204: 3A00              
-0206:                   load:
-0206: CD1801   [17]     	call set_carret_home
-0209: 21F401   [27]     	ld hl, LOAD_TITLE1
-020C: CDE400   [44]     	call raw_textout
+01E1: 4C6F6164          LOAD_TITLE1 .asciz "Loading programm:"
+01E5: 696E6720          
+01E9: 70726F67          
+01ED: 72616D6D          
+01F1: 3A00              
+01F3:                   load:
+01F3: CD0501   [17]     	call set_carret_home
+01F6: 21E101   [27]     	ld hl, LOAD_TITLE1
+01F9: CDD100   [44]     	call raw_textout
                         
-020F: CD2701   [61]     	call set_carret_2nd_line
-0212: 7B       [65]     	ld a, e
-0213: C630     [72]     	add 48
+01FC: CD1401   [61]     	call set_carret_2nd_line
+01FF: 7B       [65]     	ld a, e
+0200: C630     [72]     	add 48
                         ;	ld e, a
                         ;	call charout
                         	
                         	; load destination in RAM
-0215: 218008   [82]     	ld hl, APP_LOC
+0202: 218008   [82]     	ld hl, APP_LOC
                         #local
                         	; set load buffer size to 0 / init state
-0218: 1600     [89]     	ld d, 0
-021A: 1E00     [96]     	ld e, 0
-021C: 7323722B [122]    	ld (hl), de
+0205: 1600     [89]     	ld d, 0
+0207: 1E00     [96]     	ld e, 0
+0209: 7323722B [122]    	ld (hl), de
                         
-0220:                   loadpage:
+020D:                   loadpage:
                         	; wait for character to appear
-0220: DB0A     [11]     	in a, (SERAC)
-0222: CB47     [19]     	bit 0, a
-0224: 28FA     [26|31]  	jr z, loadpage
+020D: DB0A     [11]     	in a, (SERAC)
+020F: CB47     [19]     	bit 0, a
+0211: 28FA     [26|31]  	jr z, loadpage
                         
                         	; read page size
-0226: DB08     [37]     	in a, (SERA)
-0228: B7       [41]     	or a
-0229: CA5E02   [51|51]  	jp z, allpagesloaded ; if the page size is 0, jump to finish
+0213: DB08     [37]     	in a, (SERA)
+0215: B7       [41]     	or a
+0216: CA4B02   [51|51]  	jp z, allpagesloaded ; if the page size is 0, jump to finish
                         
                         ; ====================================
                         
                         	; store current page size in register pari BC
-022C: 0600     [58]     	ld b, 0
-022E: 4F       [62]     	ld c, a
+0219: 0600     [58]     	ld b, 0
+021B: 4F       [62]     	ld c, a
                         
-022F: 218008   [72]     	ld hl, APP_LOC
-0232: 5E23562B [98]     	ld de, (hl)
+021C: 218008   [72]     	ld hl, APP_LOC
+021F: 5E23562B [98]     	ld de, (hl)
                         	; first 2 bytes are the size of the app, skip those
-0236: 23       [104]    	inc hl
-0237: 23       [110]    	inc hl
+0223: 23       [104]    	inc hl
+0224: 23       [110]    	inc hl
                         	; move offset
-0238: 19       [121]    	add hl, de
+0225: 19       [121]    	add hl, de
                         
                         ; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                         
                         	; set number of bytes to read to current page size (stored in C register)
-0239: C5       [132]    	push bc
-023A: 41       [136]    	ld b, c
-023B: 0E08     [143]    	ld c, SERA ; we want to read from port SERA
-023D:                   nextserial:
+0226: C5       [132]    	push bc
+0227: 41       [136]    	ld b, c
+0228: 0E08     [143]    	ld c, SERA ; we want to read from port SERA
+022A:                   nextserial:
                         	; wait for character ready
-023D: DB0A     [11]     	in a, (SERAC)
-023F: CB47     [19]     	bit 0, a
-0241: 28FA     [26|31]  	jr z, nextserial
+022A: DB0A     [11]     	in a, (SERAC)
+022C: CB47     [19]     	bit 0, a
+022E: 28FA     [26|31]  	jr z, nextserial
                         
                         	; read next byte into (hl)
-0243: EDA2     [42]     	ini
-0245: 20F6     [49|54]  	jr nz, nextserial
-0247: C1       [59]     	pop bc
+0230: EDA2     [42]     	ini
+0232: 20F6     [49|54]  	jr nz, nextserial
+0234: C1       [59]     	pop bc
                         
                         	; do 16 bit addition of the loaded memory, kind of hacky to us HL register for that
-0248: 218008   [69]     	ld hl, APP_LOC
-024B: 5E23562B [95]     	ld de, (hl)
+0235: 218008   [69]     	ld hl, APP_LOC
+0238: 5E23562B [95]     	ld de, (hl)
                         	; current app size loaded
-024F: 626B     [103]    	ld hl, de
+023C: 626B     [103]    	ld hl, de
                         	; add the current page size
-0251: 09       [114]    	add hl, bc
+023E: 09       [114]    	add hl, bc
                         	; move it to de proxy register as we can only reference memory via (hl)
-0252: 545D     [122]    	ld de, hl
+023F: 545D     [122]    	ld de, hl
                         	; load the app location & push the new calculated app size
-0254: 218008   [132]    	ld hl, APP_LOC
-0257: 7323722B [158]    	ld (hl), de
+0241: 218008   [132]    	ld hl, APP_LOC
+0244: 7323722B [158]    	ld (hl), de
                         
                         	; go to next page load
-025B: C32002   [168]    	jp loadpage
+0248: C30D02   [168]    	jp loadpage
                         
                         	;jp loadpage
-025E:                   allpagesloaded:
+024B:                   allpagesloaded:
                         
                         	; return carret
-025E: 0640     [ 7]     	ld b, 64
-0260: 212808   [17]     	ld hl, CARRET_POS
-0263: 4E       [24]     	ld c, (hl)
-0264: CD2F01   [41]     	call set_carret_raw
+024B: 0640     [ 7]     	ld b, 64
+024D: 212808   [17]     	ld hl, CARRET_POS
+0250: 4E       [24]     	ld c, (hl)
+0251: CD1C01   [41]     	call set_carret_raw
                         
-0267: CD8500   [58]     	call longwait
+0254: CD7200   [58]     	call longwait
                         
-026A: CDDF01   [75]     	call reset
+0257: CDCC01   [75]     	call reset
                         #endlocal
-026D: C9       [85]     	ret
+025A: C9       [85]     	ret
                         
-026E:                   display_app_bytes:
-026E: C5       [11]     	push bc
-026F: D5       [22]     	push de
-0270: 218008   [32]     	ld hl, APP_LOC
-0273: 46       [39]     	ld b, (hl)
-0274: 23       [45]     	inc hl
-0275:                   outbytes:
-0275: 5E       [ 7]     	ld e, (hl)
-0276: 23       [13]     	inc hl
-0277: CDA100   [30]     	call charout
-027A: 10F9     [38|43]  	djnz outbytes
+025B:                   display_app_bytes:
+025B: C5       [11]     	push bc
+025C: D5       [22]     	push de
+025D: 218008   [32]     	ld hl, APP_LOC
+0260: 46       [39]     	ld b, (hl)
+0261: 23       [45]     	inc hl
+0262:                   outbytes:
+0262: 5E       [ 7]     	ld e, (hl)
+0263: 23       [13]     	inc hl
+0264: CD8E00   [30]     	call charout
+0267: 10F9     [38|43]  	djnz outbytes
                         
-027C: CD8500   [55]     	call longwait
-027F: D1       [65]     	pop de
-0280: C1       [75]     	pop bc
-0281: C9       [85]     	ret
+0269: CD7200   [55]     	call longwait
+026C: D1       [65]     	pop de
+026D: C1       [75]     	pop bc
+026E: C9       [85]     	ret
                         
                         
-0282:                   peek0:
+026F:                   peek0:
                         #local
-0282: F5       [11]     	push af
-0283: 0600     [18]     	ld b, 0
-0285: 0E0A     [25]     	ld c, 10
-0287: CD2F01   [42]     	call set_carret_raw
-028A: 218008   [52]     	ld hl, APP_LOC
-028D: F1       [62]     	pop af
+026F: F5       [11]     	push af
+0270: 0600     [18]     	ld b, 0
+0272: 0E0A     [25]     	ld c, 10
+0274: CD1C01   [42]     	call set_carret_raw
+0277: 218008   [52]     	ld hl, APP_LOC
+027A: F1       [62]     	pop af
                         
-028E: 4F       [66]     	ld c, a
-028F: 0600     [73]     	ld b, 0
-0291: 09       [84]     	add hl, bc
+027B: 4F       [66]     	ld c, a
+027C: 0600     [73]     	ld b, 0
+027E: 09       [84]     	add hl, bc
                         
-0292: 1605     [91]     	ld d, DSP_DW
-0294: 7E       [98]     	ld a, (hl)
-0295: C630     [105]    	add 48
-0297: 5F       [109]    	ld e, a
-0298: CD8F00   [126]    	call pioout
+027F: 1605     [91]     	ld d, DSP_DW
+0281: 7E       [98]     	ld a, (hl)
+0282: C630     [105]    	add 48
+0284: 5F       [109]    	ld e, a
+0285: CD7C00   [126]    	call pioout
                         
-029B: 0640     [133]    	ld b, 64
-029D: 212808   [143]    	ld hl, CARRET_POS
-02A0: 4E       [150]    	ld c, (hl)
-02A1: CD2F01   [167]    	call set_carret_raw
+0288: 0640     [133]    	ld b, 64
+028A: 212808   [143]    	ld hl, CARRET_POS
+028D: 4E       [150]    	ld c, (hl)
+028E: CD1C01   [167]    	call set_carret_raw
                         
                         #endlocal
-02A4: C9       [177]    	ret	
+0291: C9       [177]    	ret	
                         
                         ; 0..9 = 48..57
                         ; a..f = 97..102
                         
-02A5:                   NumToHex
-02A5: 4F       [ 4]     	ld c, a   ; a = number to convert
-02A6: CDB002   [21]     	call Num1
-02A9: 57       [25]     	ld d, a
-02AA: 79       [29]     	ld a, c
-02AB: CDB402   [46]     	call Num2
-02AE: 5F       [50]     	ld e, a
-02AF: C9       [60]     	ret  ; return with hex number in de
+0292:                   NumToHex
+0292: 4F       [ 4]     	ld c, a   ; a = number to convert
+0293: CD9D02   [21]     	call Num1
+0296: 57       [25]     	ld d, a
+0297: 79       [29]     	ld a, c
+0298: CDA102   [46]     	call Num2
+029B: 5F       [50]     	ld e, a
+029C: C9       [60]     	ret  ; return with hex number in de
                         
-02B0:                   Num1
-02B0: 1F       [ 4]     	rra
-02B1: 1F       [ 8]         rra
-02B2: 1F       [12]         rra
-02B3: 1F       [16]         rra
-02B4:                   Num2
-02B4: F6F0     [ 7]     	or $F0
-02B6: 27       [11]         daa
-02B7: C6A0     [18]         add a, $A0
-02B9: CE40     [25]         adc a, $40 ; Ascii hex at this point (0 to F)   
-02BB: C9       [35]         ret
+029D:                   Num1
+029D: 1F       [ 4]     	rra
+029E: 1F       [ 8]         rra
+029F: 1F       [12]         rra
+02A0: 1F       [16]         rra
+02A1:                   Num2
+02A1: F6F0     [ 7]     	or $F0
+02A3: 27       [11]         daa
+02A4: C6A0     [18]         add a, $A0
+02A6: CE40     [25]         adc a, $40 ; Ascii hex at this point (0 to F)   
+02A8: C9       [35]         ret
                         
-02BC:                   peek:
+02A9:                   peek:
                         #local
-02BC: F5       [11]     	push af
-02BD: 0600     [18]     	ld b, 0
-02BF: 0E0A     [25]     	ld c, 10
-02C1: CD2F01   [42]     	call set_carret_raw
-02C4: 218008   [52]     	ld hl, APP_LOC
-02C7: F1       [62]     	pop af
+02A9: F5       [11]     	push af
+02AA: 0600     [18]     	ld b, 0
+02AC: 0E0A     [25]     	ld c, 10
+02AE: CD1C01   [42]     	call set_carret_raw
+02B1: 218008   [52]     	ld hl, APP_LOC
+02B4: F1       [62]     	pop af
                         
                         	; calculate address for peek byte
-02C8: 4F       [66]     	ld c, a
-02C9: 0600     [73]     	ld b, 0
-02CB: 09       [84]     	add hl, bc
+02B5: 4F       [66]     	ld c, a
+02B6: 0600     [73]     	ld b, 0
+02B8: 09       [84]     	add hl, bc
                         
-02CC: 7E       [91]     	ld a, (hl)
-02CD: CDA502   [108]    	call NumToHex
+02B9: 7E       [91]     	ld a, (hl)
+02BA: CD9202   [108]    	call NumToHex
                         
                         	; store lsb in c register
-02D0: 4B       [112]    	ld c, e
-02D1: 42       [116]    	ld b, d
+02BD: 4B       [112]    	ld c, e
+02BE: 42       [116]    	ld b, d
                         
-02D2: 1605     [123]    	ld d, DSP_DW
+02BF: 1605     [123]    	ld d, DSP_DW
                         		
                         	; ld e, (hl)
                         	; b register contains lsb
-02D4: 58       [127]    	ld e, b
-02D5: CD8F00   [144]    	call pioout
+02C1: 58       [127]    	ld e, b
+02C2: CD7C00   [144]    	call pioout
                         	; c register contains msb
-02D8: 59       [148]    	ld e, c
-02D9: CD8F00   [165]    	call pioout
+02C5: 59       [148]    	ld e, c
+02C6: CD7C00   [165]    	call pioout
                         
-02DC: 0640     [172]    	ld b, 64
-02DE: 212808   [182]    	ld hl, CARRET_POS
-02E1: 4E       [189]    	ld c, (hl)
-02E2: CD2F01   [206]    	call set_carret_raw
+02C9: 0640     [172]    	ld b, 64
+02CB: 212808   [182]    	ld hl, CARRET_POS
+02CE: 4E       [189]    	ld c, (hl)
+02CF: CD1C01   [206]    	call set_carret_raw
                         
                         #endlocal
-02E5: C9       [216]    	ret	
+02D2: C9       [216]    	ret	
                         
                         ; this will peek and display memory location in ram starting at APP_LOC (0xe00)
-02E6:                   peek_pos:
+02D3:                   peek_pos:
                         #local	
                         	; we need to move past [len] + 'peek ' string - 6 bytes
-02E6: 23       [ 6]     	inc hl
-02E7: 23       [12]     	inc hl
-02E8: 23       [18]     	inc hl
-02E9: 23       [24]     	inc hl
-02EA: 23       [30]     	inc hl
-02EB: 23       [36]     	inc hl
+02D3: 23       [ 6]     	inc hl
+02D4: 23       [12]     	inc hl
+02D5: 23       [18]     	inc hl
+02D6: 23       [24]     	inc hl
+02D7: 23       [30]     	inc hl
+02D8: 23       [36]     	inc hl
                         
                         	; decimal input needs to be converted to byte, eg 10 [49h48h] => 0xa
-02EC: 56       [43]     	ld d, (hl)
-02ED: 23       [49]     	inc hl
-02EE: 5E       [56]     	ld e, (hl)
+02D9: 56       [43]     	ld d, (hl)
+02DA: 23       [49]     	inc hl
+02DB: 5E       [56]     	ld e, (hl)
                         ;	ld d, '0'
                         ;	ld e, '2
-02EF: CD1E03   [73]     	call HexToNum ; we have decoded value in A register
+02DC: CD0B03   [73]     	call HexToNum ; we have decoded value in A register
                         
                         	; move carret to 1st row 10th column for result display pos
-02F2: 0600     [80]     	ld b, 0
-02F4: 0E0A     [87]     	ld c, 10
-02F6: CD2F01   [104]    	call set_carret_raw
+02DF: 0600     [80]     	ld b, 0
+02E1: 0E0A     [87]     	ld c, 10
+02E3: CD1C01   [104]    	call set_carret_raw
                         
                         	; we have address offset in a
-02F9: 218008   [114]    	ld hl, APP_LOC
-02FC: B7       [118]    	or a
-02FD: CA0403   [128|128]	jp z, no_offset
-0300: 47       [132]    	ld b, a
-0301:                   next_offset:	
-0301: 23       [ 6]     	inc hl
-0302: 10FD     [14|19]  	djnz next_offset
-0304:                   no_offset:
+02E6: 218008   [114]    	ld hl, APP_LOC
+02E9: B7       [118]    	or a
+02EA: CAF102   [128|128]	jp z, no_offset
+02ED: 47       [132]    	ld b, a
+02EE:                   next_offset:	
+02EE: 23       [ 6]     	inc hl
+02EF: 10FD     [14|19]  	djnz next_offset
+02F1:                   no_offset:
                         
                         ;	add hl, bc
                         
                         	; encode byte value to hex for display
-0304: 7E       [ 7]     	ld a, (hl)
-0305: CDA502   [24]     	call NumToHex
-0308: 4B       [28]     	ld c, e
-0309: 42       [32]     	ld b, d
+02F1: 7E       [ 7]     	ld a, (hl)
+02F2: CD9202   [24]     	call NumToHex
+02F5: 4B       [28]     	ld c, e
+02F6: 42       [32]     	ld b, d
                         
                         	; output value
-030A: 1605     [39]     	ld d, DSP_DW		
+02F7: 1605     [39]     	ld d, DSP_DW		
                         	; b register contains lsb
-030C: 58       [43]     	ld e, b
-030D: CD8F00   [60]     	call pioout
+02F9: 58       [43]     	ld e, b
+02FA: CD7C00   [60]     	call pioout
                         	; c register contains msb
-0310: 59       [64]     	ld e, c
-0311: CD8F00   [81]     	call pioout
+02FD: 59       [64]     	ld e, c
+02FE: CD7C00   [81]     	call pioout
                         
                         	; reset carret back to the next row
-0314: 0640     [88]     	ld b, 64
-0316: 212808   [98]     	ld hl, CARRET_POS
-0319: 4E       [105]    	ld c, (hl)
-031A: CD2F01   [122]    	call set_carret_raw
+0301: 0640     [88]     	ld b, 64
+0303: 212808   [98]     	ld hl, CARRET_POS
+0306: 4E       [105]    	ld c, (hl)
+0307: CD1C01   [122]    	call set_carret_raw
                         
                         #endlocal
-031D: C9       [132]    	ret
+030A: C9       [132]    	ret
                         
-031E:                   HexToNum
-031E: 7A       [ 4]        ld   a,d
-031F: CD2D03   [21]        call Hex1
-0322: 87       [25]        add  a,a
-0323: 87       [29]        add  a,a
-0324: 87       [33]        add  a,a
-0325: 87       [37]        add  a,a
-0326: 57       [41]        ld   d,a
-0327: 7B       [45]        ld   a,e
-0328: CD2D03   [62]        call Hex1
-032B: B2       [66]        or   d
-032C: C9       [76]        ret
+030B:                   HexToNum
+030B: 7A       [ 4]        ld   a,d
+030C: CD1A03   [21]        call Hex1
+030F: 87       [25]        add  a,a
+0310: 87       [29]        add  a,a
+0311: 87       [33]        add  a,a
+0312: 87       [37]        add  a,a
+0313: 57       [41]        ld   d,a
+0314: 7B       [45]        ld   a,e
+0315: CD1A03   [62]        call Hex1
+0318: B2       [66]        or   d
+0319: C9       [76]        ret
                         
-032D:                   Hex1
-032D: D630     [ 7]        sub  '0'
-032F: FE0A     [14]        cp   10
-0331: D8       [19|25]     ret  c
-0332: D641     [26]        sub  'A'
-0334: C630     [33]        add  a, '0'
-0336: C60A     [40]        add a, 10
-0338: C9       [50]        ret
+031A:                   Hex1
+031A: D630     [ 7]        sub  '0'
+031C: FE0A     [14]        cp   10
+031E: D8       [19|25]     ret  c
+031F: D641     [26]        sub  'A'
+0321: C630     [33]        add  a, '0'
+0323: C60A     [40]        add a, 10
+0325: C9       [50]        ret
                         
-0339: 52756E6E          RUN_APP_TXT .ascii "Running app...!", 0x0
-033D: 696E6720          
-0341: 6170702E          
-0345: 2E2E2100          
-0349:                   run_app:
-0349: CD0A01   [17]     	call cleardisplay
+0326: 52756E6E          RUN_APP_TXT .ascii "Running app...!", 0x0
+032A: 696E6720          
+032E: 6170702E          
+0332: 2E2E2100          
+0336:                   run_app:
+0336: CDF700   [17]     	call cleardisplay
                         
-034C: 213903   [27]     	ld hl, RUN_APP_TXT
-034F: CDD700   [44]     	call mstringout
-0352: CD8500   [61]     	call longwait
+0339: 212603   [27]     	ld hl, RUN_APP_TXT
+033C: CDC400   [44]     	call mstringout
+033F: CD7200   [61]     	call longwait
                         
-0355: 218008   [71]     	ld hl, APP_LOC
+0342: 218008   [71]     	ld hl, APP_LOC
                         	; first 2 bytes are app size
-0358: 23       [77]     	inc hl
-0359: 23       [83]     	inc hl
-035A: E9       [87]     	jp (hl)
-035B:                   app_ret:
-035B: CDDF01   [17]     	call reset
-035E: C9       [27]     	ret
+0345: 23       [77]     	inc hl
+0346: 23       [83]     	inc hl
+0347: E9       [87]     	jp (hl)
+0348:                   app_ret:
+0348: CDCC01   [17]     	call reset
+034B: C9       [27]     	ret
                         
                         
-035F:                   copy_screen_to_temp:
+034C:                   copy_screen_to_temp:
                         	; hl should be
-035F: 011400   [10]     	ld bc, 20
-0362: 210008   [20]     	ld hl, LCD1
-0365: 23       [26]     	inc hl
-0366: 23       [32]     	inc hl
-0367: 112A08   [42]     	ld de, TMP_STR
-036A: 79       [46]     	ld a, c
-036B: 12       [53]     	ld (de), a
-036C: 13       [59]     	inc de
-036D: EDB0     [75|21]  	ldir
-036F: 13       [81]     	inc de
-0370: 3E00     [88]     	ld a, 0
-0372: 12       [95]     	ld (de), a
-0373: C9       [105]    	ret
+034C: 011400   [10]     	ld bc, 20
+034F: 210008   [20]     	ld hl, LCD1
+0352: 23       [26]     	inc hl
+0353: 23       [32]     	inc hl
+0354: 112A08   [42]     	ld de, TMP_STR
+0357: 79       [46]     	ld a, c
+0358: 12       [53]     	ld (de), a
+0359: 13       [59]     	inc de
+035A: EDB0     [75|21]  	ldir
+035C: 13       [81]     	inc de
+035D: 3E00     [88]     	ld a, 0
+035F: 12       [95]     	ld (de), a
+0360: C9       [105]    	ret
                         
-0374: 05726573          RESET_CMD .ascii 5, "reset", 0x0
-0378: 657400            
-037B: 046C6F61          LOAD_CMD .ascii 4, "load", 0x0
-037F: 6400              
-0381: 0372756E          RUN_CMD .ascii 3, "run", 0x0
-0385: 00                
-0386: 05706565          PEEK0_CMD .ascii 5, "peek0", 0x0
-038A: 6B3000            
-038D: 05706565          PEEK1_CMD .ascii 5, "peek1", 0x0
-0391: 6B3100            
-0394: 05706565          PEEK2_CMD .ascii 5, "peek2", 0x0
-0398: 6B3200            
-039B: 05706565          PEEK3_CMD .ascii 5, "peek3", 0x0
-039F: 6B3300            
-03A2: 05706565          PEEK4_CMD .ascii 5, "peek4", 0x0
-03A6: 6B3400            
-03A9: 05706565          PEEK5_CMD .ascii 5, "peek5", 0x0
-03AD: 6B3500            
-03B0: 05706565          PEEK6_CMD .ascii 5, "peek6", 0x0
-03B4: 6B3600            
-03B7: 05706565          PEEK7_CMD .ascii 5, "peek7", 0x0
-03BB: 6B3700            
-03BE: 05706565          PEEK_CMD .ascii 5, "peek ", 0x0
-03C2: 6B2000            
-03C5:                   commandeval:
-03C5: 010A00   [10]     	ld bc, 10
-03C8: CD5F03   [27]     	call copy_screen_to_temp
+0361: 05726573          RESET_CMD .ascii 5, "reset", 0x0
+0365: 657400            
+0368: 046C6F61          LOAD_CMD .ascii 4, "load", 0x0
+036C: 6400              
+036E: 0372756E          RUN_CMD .ascii 3, "run", 0x0
+0372: 00                
+0373: 05706565          PEEK0_CMD .ascii 5, "peek0", 0x0
+0377: 6B3000            
+037A: 05706565          PEEK1_CMD .ascii 5, "peek1", 0x0
+037E: 6B3100            
+0381: 05706565          PEEK2_CMD .ascii 5, "peek2", 0x0
+0385: 6B3200            
+0388: 05706565          PEEK3_CMD .ascii 5, "peek3", 0x0
+038C: 6B3300            
+038F: 05706565          PEEK4_CMD .ascii 5, "peek4", 0x0
+0393: 6B3400            
+0396: 05706565          PEEK5_CMD .ascii 5, "peek5", 0x0
+039A: 6B3500            
+039D: 05706565          PEEK6_CMD .ascii 5, "peek6", 0x0
+03A1: 6B3600            
+03A4: 05706565          PEEK7_CMD .ascii 5, "peek7", 0x0
+03A8: 6B3700            
+03AB: 05706565          PEEK_CMD .ascii 5, "peek ", 0x0
+03AF: 6B2000            
+03B2:                   commandeval:
+03B2: 010A00   [10]     	ld bc, 10
+03B5: CD4C03   [27]     	call copy_screen_to_temp
                         
                         	; comparison
-03CB: 212A08   [37]     	ld hl, TMP_STR
-03CE: 3605     [47]     	ld (hl), 5
-03D0: 117403   [57]     	ld de, RESET_CMD
-03D3: CDC001   [74]     	call CmpStrings
-03D6: CCDF01   [84|91]  	call z, reset
+03B8: 212A08   [37]     	ld hl, TMP_STR
+03BB: 3605     [47]     	ld (hl), 5
+03BD: 116103   [57]     	ld de, RESET_CMD
+03C0: CDAD01   [74]     	call CmpStrings
+03C3: CCCC01   [84|91]  	call z, reset
                         
                         	; check load
-03D9: 212A08   [94]     	ld hl, TMP_STR
-03DC: 3604     [104]    	ld (hl), 4
-03DE: 117B03   [114]    	ld de, LOAD_CMD
-03E1: CDC001   [131]    	call CmpStrings
-03E4: CC0602   [141|148]	call z, load
+03C6: 212A08   [94]     	ld hl, TMP_STR
+03C9: 3604     [104]    	ld (hl), 4
+03CB: 116803   [114]    	ld de, LOAD_CMD
+03CE: CDAD01   [131]    	call CmpStrings
+03D1: CCF301   [141|148]	call z, load
                         
                         	; run command
-03E7: 212A08   [151]    	ld hl, TMP_STR
-03EA: 3603     [161]    	ld (hl), 3
-03EC: 118103   [171]    	ld de, RUN_CMD
-03EF: CDC001   [188]    	call CmpStrings
-03F2: CC4903   [198|205]	call z, run_app
+03D4: 212A08   [151]    	ld hl, TMP_STR
+03D7: 3603     [161]    	ld (hl), 3
+03D9: 116E03   [171]    	ld de, RUN_CMD
+03DC: CDAD01   [188]    	call CmpStrings
+03DF: CC3603   [198|205]	call z, run_app
                         
                         	; peek ram for app addresses
-03F5: 212A08   [208]    	ld hl, TMP_STR
-03F8: 3605     [218]    	ld (hl), 5
-03FA: 118603   [228]    	ld de, PEEK0_CMD
-03FD: CDC001   [245]    	call CmpStrings
-0400: 3E00     [252]    	ld a, 0
-0402: CC8202   [262|269]	call z, peek0
+03E2: 212A08   [208]    	ld hl, TMP_STR
+03E5: 3605     [218]    	ld (hl), 5
+03E7: 117303   [228]    	ld de, PEEK0_CMD
+03EA: CDAD01   [245]    	call CmpStrings
+03ED: 3E00     [252]    	ld a, 0
+03EF: CC6F02   [262|269]	call z, peek0
                         
-0405: 212A08   [272]    	ld hl, TMP_STR
-0408: 3605     [282]    	ld (hl), 5
-040A: 118D03   [292]    	ld de, PEEK1_CMD
-040D: CDC001   [309]    	call CmpStrings
-0410: 3E01     [316]    	ld a, 1
-0412: CCBC02   [326|333]	call z, peek
+03F2: 212A08   [272]    	ld hl, TMP_STR
+03F5: 3605     [282]    	ld (hl), 5
+03F7: 117A03   [292]    	ld de, PEEK1_CMD
+03FA: CDAD01   [309]    	call CmpStrings
+03FD: 3E01     [316]    	ld a, 1
+03FF: CCA902   [326|333]	call z, peek
                         
-0415: 212A08   [336]    	ld hl, TMP_STR
-0418: 3605     [346]    	ld (hl), 5
-041A: 119403   [356]    	ld de, PEEK2_CMD
-041D: CDC001   [373]    	call CmpStrings
-0420: 3E02     [380]    	ld a, 2
-0422: CCBC02   [390|397]	call z, peek
+0402: 212A08   [336]    	ld hl, TMP_STR
+0405: 3605     [346]    	ld (hl), 5
+0407: 118103   [356]    	ld de, PEEK2_CMD
+040A: CDAD01   [373]    	call CmpStrings
+040D: 3E02     [380]    	ld a, 2
+040F: CCA902   [390|397]	call z, peek
                         
-0425: 212A08   [400]    	ld hl, TMP_STR
-0428: 3605     [410]    	ld (hl), 5
-042A: 119B03   [420]    	ld de, PEEK3_CMD
-042D: CDC001   [437]    	call CmpStrings
-0430: 3E03     [444]    	ld a, 3
-0432: CCBC02   [454|461]	call z, peek
+0412: 212A08   [400]    	ld hl, TMP_STR
+0415: 3605     [410]    	ld (hl), 5
+0417: 118803   [420]    	ld de, PEEK3_CMD
+041A: CDAD01   [437]    	call CmpStrings
+041D: 3E03     [444]    	ld a, 3
+041F: CCA902   [454|461]	call z, peek
                         
-0435: 212A08   [464]    	ld hl, TMP_STR
-0438: 3605     [474]    	ld (hl), 5
-043A: 11A203   [484]    	ld de, PEEK4_CMD
-043D: CDC001   [501]    	call CmpStrings
-0440: 3E04     [508]    	ld a, 4
-0442: CCBC02   [518|525]	call z, peek
-                        
-                        
-0445: 212A08   [528]    	ld hl, TMP_STR
-0448: 3605     [538]    	ld (hl), 5
-044A: 11A903   [548]    	ld de, PEEK5_CMD
-044D: CDC001   [565]    	call CmpStrings
-0450: 3E05     [572]    	ld a, 5
-0452: CCBC02   [582|589]	call z, peek
+0422: 212A08   [464]    	ld hl, TMP_STR
+0425: 3605     [474]    	ld (hl), 5
+0427: 118F03   [484]    	ld de, PEEK4_CMD
+042A: CDAD01   [501]    	call CmpStrings
+042D: 3E04     [508]    	ld a, 4
+042F: CCA902   [518|525]	call z, peek
                         
                         
-0455: 212A08   [592]    	ld hl, TMP_STR
-0458: 3605     [602]    	ld (hl), 5
-045A: 11B003   [612]    	ld de, PEEK6_CMD
-045D: CDC001   [629]    	call CmpStrings
-0460: 3E06     [636]    	ld a, 6
-0462: CCBC02   [646|653]	call z, peek
+0432: 212A08   [528]    	ld hl, TMP_STR
+0435: 3605     [538]    	ld (hl), 5
+0437: 119603   [548]    	ld de, PEEK5_CMD
+043A: CDAD01   [565]    	call CmpStrings
+043D: 3E05     [572]    	ld a, 5
+043F: CCA902   [582|589]	call z, peek
                         
                         
-0465: 212A08   [656]    	ld hl, TMP_STR
-0468: 3605     [666]    	ld (hl), 5
-046A: 11B703   [676]    	ld de, PEEK7_CMD
-046D: CDC001   [693]    	call CmpStrings
-0470: 3E07     [700]    	ld a, 7
-0472: CCBC02   [710|717]	call z, peek
+0442: 212A08   [592]    	ld hl, TMP_STR
+0445: 3605     [602]    	ld (hl), 5
+0447: 119D03   [612]    	ld de, PEEK6_CMD
+044A: CDAD01   [629]    	call CmpStrings
+044D: 3E06     [636]    	ld a, 6
+044F: CCA902   [646|653]	call z, peek
                         
-0475: 212A08   [720]    	ld hl, TMP_STR
-0478: 3605     [730]    	ld (hl), 5
-047A: 11BE03   [740]    	ld de, PEEK_CMD
-047D: CDC001   [757]    	call CmpStrings
-0480: CCE602   [767|774]	call z, peek_pos
                         
-0483: C9       [777]    	ret
+0452: 212A08   [656]    	ld hl, TMP_STR
+0455: 3605     [666]    	ld (hl), 5
+0457: 11A403   [676]    	ld de, PEEK7_CMD
+045A: CDAD01   [693]    	call CmpStrings
+045D: 3E07     [700]    	ld a, 7
+045F: CCA902   [710|717]	call z, peek
                         
-0484:                   waitserial:
+0462: 212A08   [720]    	ld hl, TMP_STR
+0465: 3605     [730]    	ld (hl), 5
+0467: 11AB03   [740]    	ld de, PEEK_CMD
+046A: CDAD01   [757]    	call CmpStrings
+046D: CCD302   [767|774]	call z, peek_pos
+                        
+0470: C9       [777]    	ret
+                        
+0471:                   waitserial:
                         #local
-0484:                   poll:
-0484: DB0A     [11]     	in a, (SERAC)
-0486: CB47     [19]     	bit 0, a
-0488: 28FA     [26|31]  	jr z, poll
+0471:                   poll:
+0471: DB0A     [11]     	in a, (SERAC)
+0473: CB47     [19]     	bit 0, a
+0475: 28FA     [26|31]  	jr z, poll
                         #endlocal
-048A: DB08     [37]     	in a, (SERA)
-048C: 5F       [41]     	ld e, a
-048D: C9       [51]     	ret
-                        
-048E: 57616974          WAIT_HERE .ascii "Wait starts here!", 0x0
-0492: 20737461          
-0496: 72747320          
-049A: 68657265          
-049E: 2100              
-04A0:                   main:
-04A0: CD5B00   [17]     	call initpio
-04A3: CD9501   [34]     	call initdisplay
-04A6: CD2B05   [51]     	call init_ps2_keyboard
-04A9: CD6200   [68]     	call initserial
-04AC: CDDF01   [85]     	call reset
-                        
-04AF:                   runloop:
-04AF: CD8404   [17]     	call waitserial
-04B2: CDA100   [34]     	call charout
-                        
-04B5: CDC503   [51]     	call commandeval
-                        
-04B8: C3AF04   [61]     	jp runloop
-                        
-04BB: 76       [65]     	halt
-                        
+0477: DB08     [37]     	in a, (SERA)
+0479: 5F       [41]     	ld e, a
+047A: C9       [51]     	ret
                         
                         ; serial & keyboard input
                         
                         ; move to BIOS
-04BC:                   OutHex:
-04BC: C5       [11]     	push bc
-04BD: D5       [22]     	push de
-04BE: F5       [33]     	push af
-04BF: CDA502   [50]     	call NumToHex
-04C2: 424B     [58]     	ld bc, de
-04C4: 1605     [65]     	ld d, DSP_DW
+047B:                   OutHex:
+047B: C5       [11]     	push bc
+047C: D5       [22]     	push de
+047D: F5       [33]     	push af
+047E: CD9202   [50]     	call NumToHex
+0481: 424B     [58]     	ld bc, de
+0483: 1605     [65]     	ld d, DSP_DW
                         
                         #local
-04C6: 78       [69]     	ld a, b
-04C7: D630     [76]     	sub a, 48
-04C9: CAD004   [86|86]  	jp z, singlechar
+0485: 78       [69]     	ld a, b
+0486: D630     [76]     	sub a, 48
+0488: CA8F04   [86|86]  	jp z, singlechar
                         
-04CC: 58       [90]     	ld e, b
-04CD: CD8F00   [107]    	call pioout
+048B: 58       [90]     	ld e, b
+048C: CD7C00   [107]    	call pioout
                         
-04D0:                   singlechar:
-04D0: 59       [ 4]     	ld e, c
-04D1: CD8F00   [21]     	call pioout
+048F:                   singlechar:
+048F: 59       [ 4]     	ld e, c
+0490: CD7C00   [21]     	call pioout
                         #endlocal
                         
-04D4: F1       [31]     	pop af
-04D5: D1       [41]     	pop de
-04D6: C1       [51]     	pop bc
-04D7: C9       [61]     	ret
+0493: F1       [31]     	pop af
+0494: D1       [41]     	pop de
+0495: C1       [51]     	pop bc
+0496: C9       [61]     	ret
                         
                         
                         ; TODO: move to BIOS
-04D8:                   disablecursor:
+0497:                   disablecursor:
                         	; hide cursor
-04D8: 1601     [ 7]     	ld d, DSP_IW
-04DA: 1E0C     [14]     	ld e, 0b00001100
-04DC: CD8F00   [31]     	call pioout
-04DF: C9       [41]     	ret
+0497: 1601     [ 7]     	ld d, DSP_IW
+0499: 1E0C     [14]     	ld e, 0b00001100
+049B: CD7C00   [31]     	call pioout
+049E: C9       [41]     	ret
                         
                         ; move to BIOS
                         #data _BIOS_RAM
 083E: 00000000          keystroke defs 4, 00h
                         #code _CODE
-04E0:                   wait_keystroke:
-04E0: E5       [11]     	push hl
-04E1: C5       [22]     	push bc
-04E2: D5       [33]     	push de
-04E3: 213E08   [43]     	ld hl, keystroke
+049F:                   wait_keystroke:
+049F: E5       [11]     	push hl
+04A0: C5       [22]     	push bc
+04A1: D5       [33]     	push de
+04A2: 213E08   [43]     	ld hl, keystroke
                         #local	
-04E6: 3603     [53]     	ld (hl), 3
-04E8: 23       [59]     	inc hl
-04E9: 3600     [69]     	ld (hl), 0
-04EB: 23       [75]     	inc hl
-04EC: 3600     [85]     	ld (hl), 0
-04EE: 23       [91]     	inc hl
-04EF: 3600     [101]    	ld (hl), 0
-04F1: 213E08   [111]    	ld hl, keystroke
+04A5: 3603     [53]     	ld (hl), 3
+04A7: 23       [59]     	inc hl
+04A8: 3600     [69]     	ld (hl), 0
+04AA: 23       [75]     	inc hl
+04AB: 3600     [85]     	ld (hl), 0
+04AD: 23       [91]     	inc hl
+04AE: 3600     [101]    	ld (hl), 0
+04B0: 213E08   [111]    	ld hl, keystroke
                         
                         ; we wait for at least one keycode
-04F4:                   poll:
-04F4: DB0A     [11]     	in a, (SERAC)
-04F6: CB47     [19]     	bit 0, a
-04F8: 28FA     [26|31]  	jr z, poll
+04B3:                   poll:
+04B3: DB0A     [11]     	in a, (SERAC)
+04B5: CB47     [19]     	bit 0, a
+04B7: 28FA     [26|31]  	jr z, poll
                         
-04FA: 0600     [33]     	ld b, 0
-04FC: 04       [37]     	inc b
+04B9: 0600     [33]     	ld b, 0
+04BB: 04       [37]     	inc b
                         	; we have a valid first code so increment hl[0] to 1
                         	; load the code into hl[1]
-04FD: 23       [43]     	inc hl
-04FE: DB08     [54]     	in a, (SERA)
-0500: 77       [61]     	ld (hl), a
+04BC: 23       [43]     	inc hl
+04BD: DB08     [54]     	in a, (SERA)
+04BF: 77       [61]     	ld (hl), a
                         
                         	;jp done
                         	; is there a 2nd keycode right away?
-0501: DB0A     [72]     	in a, (SERAC)
-0503: CB47     [80]     	bit 0, a
-0505: CA1905   [90|90]  	jp z, done
+04C0: DB0A     [72]     	in a, (SERAC)
+04C2: CB47     [80]     	bit 0, a
+04C4: CAD804   [90|90]  	jp z, done
                         
-0508: 04       [94]     	inc b
-0509: 23       [100]    	inc hl
+04C7: 04       [94]     	inc b
+04C8: 23       [100]    	inc hl
                         
-050A: DB08     [111]    	in a, (SERA)
-050C: 77       [118]    	ld (hl), a
+04C9: DB08     [111]    	in a, (SERA)
+04CB: 77       [118]    	ld (hl), a
                         
                         	; is there a 3rd keycode right away?
-050D: DB0A     [129]    	in a, (SERAC)
-050F: CB47     [137]    	bit 0, a
-0511: CA1905   [147|147]	jp z, done
+04CC: DB0A     [129]    	in a, (SERAC)
+04CE: CB47     [137]    	bit 0, a
+04D0: CAD804   [147|147]	jp z, done
                         
-0514: 04       [151]    	inc b
-0515: 23       [157]    	inc hl
+04D3: 04       [151]    	inc b
+04D4: 23       [157]    	inc hl
                         
-0516: DB08     [168]    	in a, (SERA)
-0518: 77       [175]    	ld (hl), a
+04D5: DB08     [168]    	in a, (SERA)
+04D7: 77       [175]    	ld (hl), a
                         
-0519:                   done:
+04D8:                   done:
                         #endlocal
-0519: 213E08   [10]     	ld hl, keystroke
-051C: 70       [17]     	ld (hl), b
-051D: D1       [27]     	pop de
-051E: C1       [37]     	pop bc
-051F: E1       [47]     	pop hl
-0520: C9       [57]     	ret
+04D8: 213E08   [10]     	ld hl, keystroke
+04DB: 70       [17]     	ld (hl), b
+04DC: D1       [27]     	pop de
+04DD: C1       [37]     	pop bc
+04DE: E1       [47]     	pop hl
+04DF: C9       [57]     	ret
                         
                         
-0521:                   PS2_SERIAL_INIT
-0521: 0018              	defb 0, 0b00011000	; WR0, channel reset
-0523: 0405              	defb 4, 0b00000101  ; WR4, odd parity, 1 stop bit, x1 clock mode coming from keyboard
-0525: 03C1              	defb 3, 0b11000001	; WR3, Rx enable, Rx 8 bits /char
-0527: 0568              	defb 5, 0b01101000	; WR5, Tx enable, Tx 8 bitts char
-0529: 0180              	defb 1, 0b10000000	; WR1, Wait/Ready on R/T enable 
+04E0:                   PS2_SERIAL_INIT
+04E0: 0018              	defb 0, 0b00011000	; WR0, channel reset
+04E2: 0405              	defb 4, 0b00000101  ; WR4, odd parity, 1 stop bit, x1 clock mode coming from keyboard
+04E4: 03C1              	defb 3, 0b11000001	; WR3, Rx enable, Rx 8 bits /char
+04E6: 0568              	defb 5, 0b01101000	; WR5, Tx enable, Tx 8 bitts char
+04E8: 0180              	defb 1, 0b10000000	; WR1, Wait/Ready on R/T enable 
                         
-052B:                   init_ps2_keyboard:
-052B: E5       [11]     	push hl
-052C: C5       [22]     	push bc
+04EA:                   init_ps2_keyboard:
+04EA: E5       [11]     	push hl
+04EB: C5       [22]     	push bc
                         
-052D: 212105   [32]     	ld hl, PS2_SERIAL_INIT
-0530: 060A     [39]     	ld b, 10	; size of serial init code 5 registers(a byte address) x 1 byte config
-0532: 0E0B     [46]     	ld c, SERBC
-0534: EDB3     [62|21]  	otir
+04EC: 21E004   [32]     	ld hl, PS2_SERIAL_INIT
+04EF: 060A     [39]     	ld b, 10	; size of serial init code 5 registers(a byte address) x 1 byte config
+04F1: 0E0B     [46]     	ld c, SERBC
+04F3: EDB3     [62|21]  	otir
                         
-0536: C1       [72]     	pop bc
-0537: E1       [82]     	pop hl
-0538: C9       [92]     	ret
+04F5: C1       [72]     	pop bc
+04F6: E1       [82]     	pop hl
+04F7: C9       [92]     	ret
                         
                         ; waits on a scancode via serial port B that is wired up to PS/2 keyboard
                         #data _BIOS_RAM
 0842: 00000000          scancode defs 4, 00h
                         #code _CODE
-0539:                   wait_ps2_scancode:
-0539: E5       [11]     	push hl
-053A: C5       [22]     	push bc
-053B: D5       [33]     	push de
-053C: 214208   [43]     	ld hl, scancode
-053F: 3603     [53]     	ld (hl), 3
-0541: 23       [59]     	inc hl
-0542: 3600     [69]     	ld (hl), 0
-0544: 23       [75]     	inc hl
-0545: 3600     [85]     	ld (hl), 0
-0547: 23       [91]     	inc hl
-0548: 3600     [101]    	ld (hl), 0
-054A: 214208   [111]    	ld hl, scancode
+04F8:                   wait_ps2_scancode:
+04F8: E5       [11]     	push hl
+04F9: C5       [22]     	push bc
+04FA: D5       [33]     	push de
+04FB: 214208   [43]     	ld hl, scancode
+04FE: 3603     [53]     	ld (hl), 3
+0500: 23       [59]     	inc hl
+0501: 3600     [69]     	ld (hl), 0
+0503: 23       [75]     	inc hl
+0504: 3600     [85]     	ld (hl), 0
+0506: 23       [91]     	inc hl
+0507: 3600     [101]    	ld (hl), 0
+0509: 214208   [111]    	ld hl, scancode
                         
                         #local
-054D: C35C05   [121]    	jp poll
+050C: C31B05   [121]    	jp poll
                         
-0550:                   sink_break_code:
-0550: DB0B     [11]     	in a, (SERBC)
-0552: CB47     [19]     	bit 0, a
-0554: 28FA     [26|31]  	jr z, sink_break_code
+050F:                   sink_break_code:
+050F: DB0B     [11]     	in a, (SERBC)
+0511: CB47     [19]     	bit 0, a
+0513: 28FA     [26|31]  	jr z, sink_break_code
                         
-0556: DB09     [37]     	in a, (SERB)
-0558: F1       [47]     	pop af
-0559: C38805   [57]     	jp done
+0515: DB09     [37]     	in a, (SERB)
+0517: F1       [47]     	pop af
+0518: C34705   [57]     	jp done
                         
-055C:                   poll:
-055C: DB0B     [11]     	in a, (SERBC)
-055E: CB47     [19]     	bit 0, a
-0560: 28FA     [26|31]  	jr z, poll
+051B:                   poll:
+051B: DB0B     [11]     	in a, (SERBC)
+051D: CB47     [19]     	bit 0, a
+051F: 28FA     [26|31]  	jr z, poll
                         
-0562: 0600     [33]     	ld b, 0
-0564: 04       [37]     	inc b
+0521: 0600     [33]     	ld b, 0
+0523: 04       [37]     	inc b
                         	; we have a valid first code so increment hl[0] to 1
                         	; load the code into hl[1]
-0565: 23       [43]     	inc hl
-0566: DB09     [54]     	in a, (SERB)
+0524: 23       [43]     	inc hl
+0525: DB09     [54]     	in a, (SERB)
                         
-0568: F5       [65]     	push af
+0527: F5       [65]     	push af
                         	; ignore break codes
-0569: D6F0     [72]     	sub 0xf0
-056B: CA5005   [82|82]  	jp z, sink_break_code
-056E: F1       [92]     	pop af
+0528: D6F0     [72]     	sub 0xf0
+052A: CA0F05   [82|82]  	jp z, sink_break_code
+052D: F1       [92]     	pop af
                         
                         	; real scancode
-056F: 77       [99]     	ld (hl), a
+052E: 77       [99]     	ld (hl), a
                         
                         	;jp done
                         	; is there a 2nd scancode right away?
-0570: DB0B     [110]    	in a, (SERBC)
-0572: CB47     [118]    	bit 0, a
-0574: CA8805   [128|128]	jp z, done
+052F: DB0B     [110]    	in a, (SERBC)
+0531: CB47     [118]    	bit 0, a
+0533: CA4705   [128|128]	jp z, done
                         
-0577: 04       [132]    	inc b
-0578: 23       [138]    	inc hl
+0536: 04       [132]    	inc b
+0537: 23       [138]    	inc hl
                         
-0579: DB09     [149]    	in a, (SERB)
-057B: 77       [156]    	ld (hl), a
+0538: DB09     [149]    	in a, (SERB)
+053A: 77       [156]    	ld (hl), a
                         
                         	; is there a 3rd scancode right away?
-057C: DB0B     [167]    	in a, (SERBC)
-057E: CB47     [175]    	bit 0, a
-0580: CA8805   [185|185]	jp z, done
+053B: DB0B     [167]    	in a, (SERBC)
+053D: CB47     [175]    	bit 0, a
+053F: CA4705   [185|185]	jp z, done
                         
-0583: 04       [189]    	inc b
-0584: 23       [195]    	inc hl
+0542: 04       [189]    	inc b
+0543: 23       [195]    	inc hl
                         
-0585: DB09     [206]    	in a, (SERB)
-0587: 77       [213]    	ld (hl), a
+0544: DB09     [206]    	in a, (SERB)
+0546: 77       [213]    	ld (hl), a
                         
-0588:                   done:
-0588: 214208   [10]     	ld hl, scancode
-058B: 70       [17]     	ld (hl), b
+0547:                   done:
+0547: 214208   [10]     	ld hl, scancode
+054A: 70       [17]     	ld (hl), b
                         #endlocal
-058C: D1       [27]     	pop de
-058D: C1       [37]     	pop bc
-058E: E1       [47]     	pop hl
-058F: C9       [57]     	ret
+054B: D1       [27]     	pop de
+054C: C1       [37]     	pop bc
+054D: E1       [47]     	pop hl
+054E: C9       [57]     	ret
+                        
+                        
+054F:                   main:
+054F: CD4D00   [17]     	call initpio
+0552: CD8201   [34]     	call initdisplay
+0555: CDEA04   [51]     	call init_ps2_keyboard
+0558: CD5400   [68]     	call initserial
+                        
+055B: 213E08   [78]     	ld hl, keystroke
+055E: 3600     [88]     	ld (hl), 0
+0560: 214208   [98]     	ld hl, scancode
+0563: 3600     [108]    	ld (hl), 0
+                        
+0565: CDCC01   [125]    	call reset
+                        
+0568:                   runloop:
+0568: CD7104   [17]     	call waitserial
+056B: CD8E00   [34]     	call charout
+                        
+056E: CDB203   [51]     	call commandeval
+                        
+0571: C36805   [61]     	jp runloop
+                        
+0574: 76       [65]     	halt
+                        
+                        
                         
 
 
@@ -1109,19 +1102,19 @@
 
 #CODE _BOOT       = $0000 =     0,  size = $0013 =    19
 #CODE _GSINIT     = $0013 =    19,  size = $0000 =     0
-#CODE _CODE       = $0013 =    19,  size = $057D =  1405
-#CODE _END        = $0590 =  1424,  size = $0270 =   624
+#CODE _CODE       = $0013 =    19,  size = $0562 =  1378
+#CODE _END        = $0575 =  1397,  size = $028B =   651
 #DATA _BIOS_RAM   = $0800 =  2048,  size = $0080 =   128
 #DATA _WORK_RAM   = $0880 =  2176,  size = $0700 =  1792
 #DATA _STACK_RAM  = $0F80 =  3968,  size = $0080 =   128
 
 ; +++ global symbols +++
 
-APP_LOC             = $0880 =  2176  _WORK_RAM  bios.z80:68
-CARRET_POS          = $0828 =  2088  _BIOS_RAM  bios.z80:63
-CmpLoop             = $01CC =   460  _CODE      bios.z80:369
-CmpStrings          = $01C0 =   448  _CODE      bios.z80:354
-DISP_LINE           = $0829 =  2089  _BIOS_RAM  bios.z80:64
+APP_LOC             = $0880 =  2176  _WORK_RAM  bios.z80:65
+CARRET_POS          = $0828 =  2088  _BIOS_RAM  bios.z80:60
+CmpLoop             = $01B9 =   441  _CODE      bios.z80:363
+CmpStrings          = $01AD =   429  _CODE      bios.z80:348
+DISP_LINE           = $0829 =  2089  _BIOS_RAM  bios.z80:61
 DSP_CLR             = $0001 =     1             bios.z80:10 (unused)
 DSP_DW              = $0005 =     5             bios.z80:16
 DSP_IR              = $0003 =     3             bios.z80:15 (unused)
@@ -1129,46 +1122,44 @@ DSP_IW              = $0001 =     1             bios.z80:14
 DSP_MI              = $0006 =     6             bios.z80:12 (unused)
 DSP_ON              = $000E =    14             bios.z80:13 (unused)
 DSP_RH              = $0002 =     2             bios.z80:11 (unused)
-Hex1                = $032D =   813  _CODE      bios.z80:675
-HexToNum            = $031E =   798  _CODE      bios.z80:662
-LCD1                = $0800 =  2048  _BIOS_RAM  bios.z80:61
-LCD2                = $0814 =  2068  _BIOS_RAM  bios.z80:62
-LOAD_CMD            = $037B =   891  _CODE      bios.z80:719
-LOAD_TITLE1         = $01F4 =   500  _CODE      bios.z80:401
-NoMatch             = $01DA =   474  _CODE      bios.z80:382
-Num1                = $02B0 =   688  _CODE      bios.z80:551
-Num2                = $02B4 =   692  _CODE      bios.z80:556
-NumToHex            = $02A5 =   677  _CODE      bios.z80:542
-OutHex              = $04BC =  1212  _CODE      bios.z80:856 (unused)
-PEEK0_CMD           = $0386 =   902  _CODE      bios.z80:721
-PEEK1_CMD           = $038D =   909  _CODE      bios.z80:722
-PEEK2_CMD           = $0394 =   916  _CODE      bios.z80:723
-PEEK3_CMD           = $039B =   923  _CODE      bios.z80:724
-PEEK4_CMD           = $03A2 =   930  _CODE      bios.z80:725
-PEEK5_CMD           = $03A9 =   937  _CODE      bios.z80:726
-PEEK6_CMD           = $03B0 =   944  _CODE      bios.z80:727
-PEEK7_CMD           = $03B7 =   951  _CODE      bios.z80:728
-PEEK_CMD            = $03BE =   958  _CODE      bios.z80:729
+Hex1                = $031A =   794  _CODE      bios.z80:669
+HexToNum            = $030B =   779  _CODE      bios.z80:656
+LCD1                = $0800 =  2048  _BIOS_RAM  bios.z80:58
+LCD2                = $0814 =  2068  _BIOS_RAM  bios.z80:59
+LOAD_CMD            = $0368 =   872  _CODE      bios.z80:713
+LOAD_TITLE1         = $01E1 =   481  _CODE      bios.z80:395
+NoMatch             = $01C7 =   455  _CODE      bios.z80:376
+Num1                = $029D =   669  _CODE      bios.z80:545
+Num2                = $02A1 =   673  _CODE      bios.z80:550
+NumToHex            = $0292 =   658  _CODE      bios.z80:536
+OutHex              = $047B =  1147  _CODE      bios.z80:831 (unused)
+PEEK0_CMD           = $0373 =   883  _CODE      bios.z80:715
+PEEK1_CMD           = $037A =   890  _CODE      bios.z80:716
+PEEK2_CMD           = $0381 =   897  _CODE      bios.z80:717
+PEEK3_CMD           = $0388 =   904  _CODE      bios.z80:718
+PEEK4_CMD           = $038F =   911  _CODE      bios.z80:719
+PEEK5_CMD           = $0396 =   918  _CODE      bios.z80:720
+PEEK6_CMD           = $039D =   925  _CODE      bios.z80:721
+PEEK7_CMD           = $03A4 =   932  _CODE      bios.z80:722
+PEEK_CMD            = $03AB =   939  _CODE      bios.z80:723
 PORTA               = $0004 =     4             bios.z80:1
 PORTAC              = $0006 =     6             bios.z80:3
 PORTB               = $0005 =     5             bios.z80:2
 PORTBC              = $0007 =     7             bios.z80:4
-PS2_SERIAL_INIT     = $0521 =  1313  _CODE      bios.z80:957
-RESET_CMD           = $0374 =   884  _CODE      bios.z80:718
-RUN_APP_TXT         = $0339 =   825  _CODE      bios.z80:684
-RUN_CMD             = $0381 =   897  _CODE      bios.z80:720
+PS2_SERIAL_INIT     = $04E0 =  1248  _CODE      bios.z80:932
+RESET_CMD           = $0361 =   865  _CODE      bios.z80:712
+RUN_APP_TXT         = $0326 =   806  _CODE      bios.z80:678
+RUN_CMD             = $036E =   878  _CODE      bios.z80:714
 SERA                = $0008 =     8             bios.z80:5
 SERAC               = $000A =    10             bios.z80:7
 SERB                = $0009 =     9             bios.z80:6
 SERBC               = $000B =    11             bios.z80:8
-SERIAL_INIT         = $0051 =    81  _CODE      bios.z80:52
-SER_LINE0           = $0044 =    68  _CODE      bios.z80:49 (unused)
+SERIAL_INIT         = $0043 =    67  _CODE      bios.z80:49
 SHELL               = $0027 =    39  _CODE      bios.z80:45
 SPADDR              = $1000 =  4096             bios.z80:17
-Str1IsBigger        = $01C7 =   455  _CODE      bios.z80:363
-TMP_APP_INIT        = $003C =    60  _CODE      bios.z80:47
-TMP_STR             = $082A =  2090  _BIOS_RAM  bios.z80:65
-WAIT_HERE           = $048E =  1166  _CODE      bios.z80:834
+Str1IsBigger        = $01B4 =   436  _CODE      bios.z80:357
+TMP_APP_INIT        = $003B =    59  _CODE      bios.z80:47
+TMP_STR             = $082A =  2090  _BIOS_RAM  bios.z80:62
 WELCOME             = $0013 =    19  _CODE      bios.z80:44
 _BIOS_RAM           = $0800 =  2048  _BIOS_RAM  bios.z80:23 (unused)
 _BIOS_RAM_end       = $0880 =  2176  _BIOS_RAM  bios.z80:23 (unused)
@@ -1177,11 +1168,11 @@ _BOOT               = $0000 =     0  _BOOT      bios.z80:19 (unused)
 _BOOT_end           = $0013 =    19  _BOOT      bios.z80:19 (unused)
 _BOOT_size          = $0013 =    19  _BOOT      bios.z80:19 (unused)
 _CODE               = $0013 =    19  _CODE      bios.z80:21 (unused)
-_CODE_end           = $0590 =  1424  _CODE      bios.z80:21
-_CODE_size          = $057D =  1405  _CODE      bios.z80:21 (unused)
-_END                = $0590 =  1424  _END       bios.z80:22 (unused)
+_CODE_end           = $0575 =  1397  _CODE      bios.z80:21
+_CODE_size          = $0562 =  1378  _CODE      bios.z80:21 (unused)
+_END                = $0575 =  1397  _END       bios.z80:22 (unused)
 _END_end            = $0800 =  2048  _END       bios.z80:22 (unused)
-_END_size           = $0270 =   624  _END       bios.z80:22 (unused)
+_END_size           = $028B =   651  _END       bios.z80:22 (unused)
 _GSINIT             = $0013 =    19  _GSINIT    bios.z80:20 (unused)
 _GSINIT_end         = $0013 =    19  _GSINIT    bios.z80:20 (unused)
 _GSINIT_size        = $0000 =     0  _GSINIT    bios.z80:20 (unused)
@@ -1191,101 +1182,101 @@ _STACK_RAM_size     = $0080 =   128  _STACK_RAM bios.z80:25 (unused)
 _WORK_RAM           = $0880 =  2176  _WORK_RAM  bios.z80:24 (unused)
 _WORK_RAM_end       = $0F80 =  3968  _WORK_RAM  bios.z80:24 (unused)
 _WORK_RAM_size      = $0700 =  1792  _WORK_RAM  bios.z80:24 (unused)
-app_ret             = $035B =   859  _CODE      bios.z80:697 (unused)
-backspace           = $00CD =   205  _CODE      bios.z80:180
-charout             = $00A1 =   161  _CODE      bios.z80:145
-cleardisplay        = $010A =   266  _CODE      bios.z80:230
-commandeval         = $03C5 =   965  _CODE      bios.z80:730
-copy_screen_to_temp = $035F =   863  _CODE      bios.z80:702
-default_lcd_lines   = $00F1 =   241  _CODE      bios.z80:217
-disablecursor       = $04D8 =  1240  _CODE      bios.z80:884 (unused)
-display_app_bytes   = $026E =   622  _CODE      bios.z80:494 (unused)
-exwait              = $007B =   123  _CODE      bios.z80:105
-init_ps2_keyboard   = $052B =  1323  _CODE      bios.z80:964
-initdisplay         = $0195 =   405  _CODE      bios.z80:324
-initpio             = $005B =    91  _CODE      bios.z80:72
-initserial          = $0062 =    98  _CODE      bios.z80:80
-keystroke           = $083E =  2110  _BIOS_RAM  bios.z80:893
-line_feed           = $016E =   366  _CODE      bios.z80:299
-load                = $0206 =   518  _CODE      bios.z80:402
-longwait            = $0085 =   133  _CODE      bios.z80:117
-main                = $04A0 =  1184  _CODE      bios.z80:835
-mstringout          = $00D7 =   215  _CODE      bios.z80:191
-newline_char        = $00D1 =   209  _CODE      bios.z80:186
-outbytes            = $0275 =   629  _CODE      bios.z80:500
-peek                = $02BC =   700  _CODE      bios.z80:563
-peek0               = $0282 =   642  _CODE      bios.z80:512
-peek_pos            = $02E6 =   742  _CODE      bios.z80:603
-pioout              = $008F =   143  _CODE      bios.z80:129
-raw_textout         = $00E4 =   228  _CODE      bios.z80:203
-reset               = $01DF =   479  _CODE      bios.z80:389
-return_shell        = $013C =   316  _CODE      bios.z80:268
-run_app             = $0349 =   841  _CODE      bios.z80:685
-runloop             = $04AF =  1199  _CODE      bios.z80:842
-scancode            = $0842 =  2114  _BIOS_RAM  bios.z80:979
-set_carret_2nd_line = $0127 =   295  _CODE      bios.z80:249
-set_carret_home     = $0118 =   280  _CODE      bios.z80:239
-set_carret_raw      = $012F =   303  _CODE      bios.z80:255
-sioout              = $009D =   157  _CODE      bios.z80:140
-skip                = $00CD =   205  _CODE      bios.z80:179
-soutloop            = $00D9 =   217  _CODE      bios.z80:193
-wait                = $006E =   110  _CODE      bios.z80:90
-wait_keystroke      = $04E0 =  1248  _CODE      bios.z80:895 (unused)
-wait_ps2_scancode   = $0539 =  1337  _CODE      bios.z80:981 (unused)
-waitserial          = $0484 =  1156  _CODE      bios.z80:823
+app_ret             = $0348 =   840  _CODE      bios.z80:691 (unused)
+backspace           = $00BA =   186  _CODE      bios.z80:174
+charout             = $008E =   142  _CODE      bios.z80:139
+cleardisplay        = $00F7 =   247  _CODE      bios.z80:224
+commandeval         = $03B2 =   946  _CODE      bios.z80:724
+copy_screen_to_temp = $034C =   844  _CODE      bios.z80:696
+default_lcd_lines   = $00DE =   222  _CODE      bios.z80:211
+disablecursor       = $0497 =  1175  _CODE      bios.z80:859 (unused)
+display_app_bytes   = $025B =   603  _CODE      bios.z80:488 (unused)
+exwait              = $0068 =   104  _CODE      bios.z80:99
+init_ps2_keyboard   = $04EA =  1258  _CODE      bios.z80:939
+initdisplay         = $0182 =   386  _CODE      bios.z80:318
+initpio             = $004D =    77  _CODE      bios.z80:69
+initserial          = $0054 =    84  _CODE      bios.z80:77
+keystroke           = $083E =  2110  _BIOS_RAM  bios.z80:868
+line_feed           = $015B =   347  _CODE      bios.z80:293
+load                = $01F3 =   499  _CODE      bios.z80:396
+longwait            = $0072 =   114  _CODE      bios.z80:111
+main                = $054F =  1359  _CODE      bios.z80:1036
+mstringout          = $00C4 =   196  _CODE      bios.z80:185
+newline_char        = $00BE =   190  _CODE      bios.z80:180
+outbytes            = $0262 =   610  _CODE      bios.z80:494
+peek                = $02A9 =   681  _CODE      bios.z80:557
+peek0               = $026F =   623  _CODE      bios.z80:506
+peek_pos            = $02D3 =   723  _CODE      bios.z80:597
+pioout              = $007C =   124  _CODE      bios.z80:123
+raw_textout         = $00D1 =   209  _CODE      bios.z80:197
+reset               = $01CC =   460  _CODE      bios.z80:383
+return_shell        = $0129 =   297  _CODE      bios.z80:262
+run_app             = $0336 =   822  _CODE      bios.z80:679
+runloop             = $0568 =  1384  _CODE      bios.z80:1049
+scancode            = $0842 =  2114  _BIOS_RAM  bios.z80:954
+set_carret_2nd_line = $0114 =   276  _CODE      bios.z80:243
+set_carret_home     = $0105 =   261  _CODE      bios.z80:233
+set_carret_raw      = $011C =   284  _CODE      bios.z80:249
+sioout              = $008A =   138  _CODE      bios.z80:134
+skip                = $00BA =   186  _CODE      bios.z80:173
+soutloop            = $00C6 =   198  _CODE      bios.z80:187
+wait                = $0060 =    96  _CODE      bios.z80:87
+wait_keystroke      = $049F =  1183  _CODE      bios.z80:870 (unused)
+wait_ps2_scancode   = $04F8 =  1272  _CODE      bios.z80:956 (unused)
+waitserial          = $0471 =  1137  _CODE      bios.z80:817
 
 ; +++ local symbols +++
 
-wloop   = $0076 =   118  _CODE      bios.z80:97
+wloop   = $0063 =    99  _CODE      bios.z80:91
 
 ; +++ local symbols +++
 
-eloop   = $007E =   126  _CODE      bios.z80:109
+eloop   = $006B =   107  _CODE      bios.z80:103
 
 ; +++ local symbols +++
 
-lloop   = $0088 =   136  _CODE      bios.z80:121
+lloop   = $0075 =   117  _CODE      bios.z80:115
 
 ; +++ local symbols +++
 
-nextchar = $00E6 =   230  _CODE      bios.z80:206
+nextchar = $00D3 =   211  _CODE      bios.z80:200
 
 ; +++ local symbols +++
 
-allpagesloaded = $025E =   606  _CODE      bios.z80:480
-loadpage       = $0220 =   544  _CODE      bios.z80:421
-nextserial     = $023D =   573  _CODE      bios.z80:452
-
-; +++ local symbols +++
-
+allpagesloaded = $024B =   587  _CODE      bios.z80:474
+loadpage       = $020D =   525  _CODE      bios.z80:415
+nextserial     = $022A =   554  _CODE      bios.z80:446
 
 ; +++ local symbols +++
 
 
 ; +++ local symbols +++
 
-next_offset = $0301 =   769  _CODE      bios.z80:631
-no_offset   = $0304 =   772  _CODE      bios.z80:634
 
 ; +++ local symbols +++
 
-poll    = $0484 =  1156  _CODE      bios.z80:825
+next_offset = $02EE =   750  _CODE      bios.z80:625
+no_offset   = $02F1 =   753  _CODE      bios.z80:628
 
 ; +++ local symbols +++
 
-singlechar = $04D0 =  1232  _CODE      bios.z80:872
+poll    = $0471 =  1137  _CODE      bios.z80:819
 
 ; +++ local symbols +++
 
-done    = $0519 =  1305  _CODE      bios.z80:947
-poll    = $04F4 =  1268  _CODE      bios.z80:911
+singlechar = $048F =  1167  _CODE      bios.z80:847
 
 ; +++ local symbols +++
 
-done            = $0588 =  1416  _CODE      bios.z80:1051
-poll            = $055C =  1372  _CODE      bios.z80:1007
-sink_break_code = $0550 =  1360  _CODE      bios.z80:998
+done    = $04D8 =  1240  _CODE      bios.z80:922
+poll    = $04B3 =  1203  _CODE      bios.z80:886
+
+; +++ local symbols +++
+
+done            = $0547 =  1351  _CODE      bios.z80:1026
+poll            = $051B =  1307  _CODE      bios.z80:982
+sink_break_code = $050F =  1295  _CODE      bios.z80:973
 
 
-total time: 0.0127 sec.
+total time: 0.0135 sec.
 no errors

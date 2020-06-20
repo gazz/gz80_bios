@@ -41,13 +41,10 @@ SPADDR	equ 0x1000
 #code _CODE
 
 
-WELCOME .asciz 	"gz80, v0.2         "
-SHELL .asciz 	" >                  "
+WELCOME .asciz 	"gz80, v0.21        "
+SHELL .asciz 	" >                 "
 
 TMP_APP_INIT defb 0xdf, 0xfd, 5, 0xab, 0xc8, 0x00, 0x00, 0x00
-
-SER_LINE0 .ascii "Kas augshaa!", 0x00
-
 
 SERIAL_INIT
 	defb 0, 0b00011000	; WR0, channel reset
@@ -88,9 +85,6 @@ initserial:
 	ret
 
 wait:
-	push hl
-	ld hl, WAIT_HERE
-	pop hl
 	push bc
 	ld b, 255
 #local
@@ -831,25 +825,6 @@ poll:
 	ld e, a
 	ret
 
-WAIT_HERE .ascii "Wait starts here!", 0x0
-main:
-	call initpio
-	call initdisplay
-	call init_ps2_keyboard
-	call initserial
-	call reset
-
-runloop:
-	call waitserial
-	call charout
-
-	call commandeval
-
-	jp runloop
-
-	halt
-
-
 ; serial & keyboard input
 
 ; move to BIOS
@@ -1056,4 +1031,30 @@ done:
 	pop bc
 	pop hl
 	ret
+
+
+main:
+	call initpio
+	call initdisplay
+	call init_ps2_keyboard
+	call initserial
+
+	ld hl, keystroke
+	ld (hl), 0
+	ld hl, scancode
+	ld (hl), 0
+
+	call reset
+
+runloop:
+	call waitserial
+	call charout
+
+	call commandeval
+
+	jp runloop
+
+	halt
+
+
 

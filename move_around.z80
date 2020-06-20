@@ -1,27 +1,18 @@
 
-;longwait equ 0x10
-wait equ 0x6E
-exwait equ $007B
-longwait equ 0x85
-drawchar equ 0x8F
-cleardisplay equ 0x10a
-raw_textout equ 0xe4
-app_ret equ 0x35b
-; loads serial input into E register
-wait_serial equ 0x484
-pioout equ $008F
-DSP_IW equ 0b00000001
-; set carret anywhere on the screen
+ClearDisplay equ 0xf7
+PIOOut equ 0x7c
+ApplicationReturn equ 0x348
+; set caret anywhere on the screen
 ; b - offset, 64 (0x40) is 2nd line
 ; c - offset on the line
-set_carret_raw equ 0x12F
-DSP_DW	equ	0b00000101
-OutHex equ $04BC
-disablecursor equ $04D8
-wait_ps2_scancode equ $0539
+SetCaretRaw equ 0x11C
+DSP_DW	equ	0x5
+OutHex equ $047B
+DisableCursor equ $0497
+Wait_PS2ScanCode equ $04F8
 ; there are RAM mapped
-keystroke equ $083E
-scancode equ $0842
+STATE_KEYSTROKE equ $083E
+STATE_SCANCODE equ $0842
 
 
 
@@ -37,7 +28,7 @@ ypos defb 0
 
 rawout:
 	ld d, DSP_DW
-	call pioout
+	call PIOOut
 	ret
 
 moveup:
@@ -76,7 +67,7 @@ reset_2nd_line:
 	push bc
 	ld b, 64
 	ld c, 0
-	call set_carret_raw
+	call SetCaretRaw
 	pop bc
 	ret
 
@@ -88,9 +79,9 @@ output_keycode:
 	; output currently pressed key code on the 2nd line of lcd
 	ld b, 64
 	ld c, 0
-	call set_carret_raw
+	call SetCaretRaw
 
-	ld hl, keystroke
+	ld hl, STATE_KEYSTROKE
 	; quick check if we have any keystroke chars
 	ld a, (hl)
 	or 0
@@ -113,7 +104,7 @@ done:
 
 move:
 #local
-	ld a, (keystroke + 1)
+	ld a, (STATE_KEYSTROKE + 1)
 
 	push af
 	sub 6bh
@@ -163,11 +154,11 @@ moverow:
 	ld hl, xpos
 	ld c, (hl)
 
-	call set_carret_raw
+	call SetCaretRaw
 
 	ld e, '#'
 	ld d, DSP_DW
-	call drawchar
+	call PIOOut
 
 #endlocal
 	pop de
@@ -178,35 +169,37 @@ moverow:
 draw_player_location:
 	ld b, 64
 	ld c, 11
-	call set_carret_raw
+	call SetCaretRaw
 
 	ld d, DSP_DW
 	ld e, '['
-	call drawchar
+	call PIOOut
 
 	ld a, (xpos)
 	call OutHex
 
 	ld e, ','
-	call drawchar
+	call PIOOut
 
 	ld a, (ypos)
 	call OutHex
 
 	ld d, DSP_DW
 	ld e, ']'
-	call drawchar
+	call PIOOut
 
 	ret	
 
 main:
-	call cleardisplay
+	ld hl, STATE_KEYSTROKE
+	ld (hl), 0
+	call ClearDisplay
 	call reset_pos
-	call disablecursor
+	call DisableCursor
 
 
 runloop:
-	call cleardisplay
+	call ClearDisplay
 
 	call output_keycode
 
@@ -217,7 +210,7 @@ runloop:
 	; wait for input
 	; call wait_keystroke
 
-	call wait_ps2_scancode
+	call Wait_PS2ScanCode
 	call scancode_to_keystroke
 
 	; move
@@ -227,7 +220,14 @@ runloop:
 
 exit:
 	;halt
-	jp app_ret
+	jp ApplicationReturn
+
+
+write_player_char_to_cgram:
+	; CGRAM address is b0000*000..b0000*111 is custom chars
+	; that gives us 0x00..0x7, so 8 custom characters in CGRAM
+
+	ret
 
 
 scancode_to_keystroke:
@@ -236,8 +236,8 @@ scancode_to_keystroke:
 	push bc
 
 	; test only => copy pure scancode into keystroke
-	ld de, keystroke
-	ld hl, scancode
+	ld de, STATE_KEYSTROKE
+	ld hl, STATE_SCANCODE
 	ld b, 0
 	ld c, 4
 	ldir
@@ -246,5 +246,4 @@ scancode_to_keystroke:
 	pop de
 	pop hl
 	ret
-
 
