@@ -6,6 +6,7 @@ ApplicationReturn equ 0x348
 ; b - offset, 64 (0x40) is 2nd line
 ; c - offset on the line
 SetCaretRaw equ 0x11C
+DSP_IW	equ	0x1
 DSP_DW	equ	0x5
 OutHex equ $047B
 DisableCursor equ $0497
@@ -156,7 +157,7 @@ moverow:
 
 	call SetCaretRaw
 
-	ld e, '#'
+	ld e, 0
 	ld d, DSP_DW
 	call PIOOut
 
@@ -199,6 +200,8 @@ main:
 
 
 runloop:
+	call write_player_chars_to_cgram
+
 	call ClearDisplay
 
 	call output_keycode
@@ -206,6 +209,8 @@ runloop:
 	; render
 	call draw_player_location
 	call draw_player
+
+	call draw_field
 
 	; wait for input
 	; call wait_keystroke
@@ -223,9 +228,211 @@ exit:
 	jp ApplicationReturn
 
 
-write_player_char_to_cgram:
+draw_field:
+	; set caret anywhere on the screen
+	; b - offset, 64 (0x40) is 2nd line
+	; c - offset on the line
+	; call SetCaretRaw after
+	; 
+	; move cursor to the fields entry
+	ld b, 0
+	ld c, 6
+	call SetCaretRaw
+
+	ld d, DSP_DW
+
+	ld e, 4
+	call PIOOut
+
+	ld e, 0
+	call PIOOut
+
+	ld e, 1
+	call PIOOut
+
+	ld e, 5
+	call PIOOut
+
+
+	; second line
+	ld b, 64
+	ld c, 6
+	call SetCaretRaw
+
+	ld d, DSP_DW
+
+	ld e, 4
+	call PIOOut
+	ld e, 2
+	call PIOOut
+	ld e, 3
+	call PIOOut
+	ld e, 5
+	call PIOOut
+
+	ret
+
+
+write_player_chars_to_cgram:
 	; CGRAM address is b0000*000..b0000*111 is custom chars
 	; that gives us 0x00..0x7, so 8 custom characters in CGRAM
+	; d is control address
+	; e is data
+
+	; figure out the char to send
+
+	; BRUTE FORCE PIXEL PUSH
+	; Characeter top/left
+	ld d, DSP_IW
+	ld e, 0b01000000
+	call PIOOut
+
+	ld d, DSP_DW
+
+	ld e, 0b00000000
+	call PIOOut
+	ld e, 0b00000100
+	call PIOOut
+	ld e, 0b00000100
+	call PIOOut
+	ld e, 0b00000100
+	call PIOOut
+	ld e, 0b00000100
+	call PIOOut
+	ld e, 0b00000100
+	call PIOOut
+	ld e, 0b00000000
+	call PIOOut
+	ld e, 0b00000000
+	call PIOOut
+
+
+	; top right
+	ld d, DSP_IW
+	ld e, 0b01001000
+	call PIOOut
+
+	ld d, DSP_DW
+
+	ld e, 0b00000000
+	call PIOOut
+	ld e, 0b00011100
+	call PIOOut
+	ld e, 0b00000100
+	call PIOOut
+	ld e, 0b00011100
+	call PIOOut
+	ld e, 0b00010000
+	call PIOOut
+	ld e, 0b00011100
+	call PIOOut
+	ld e, 0b00000000
+	call PIOOut
+	ld e, 0b00000000
+	call PIOOut
+
+
+	; bottom left
+	ld d, DSP_IW
+	ld e, 0b01010000
+	call PIOOut
+
+	ld d, DSP_DW
+
+	ld e, 0b00000000
+	call PIOOut
+	ld e, 0b00011100
+	call PIOOut
+	ld e, 0b00000100
+	call PIOOut
+	ld e, 0b00011100
+	call PIOOut
+	ld e, 0b00000100
+	call PIOOut
+	ld e, 0b00011100
+	call PIOOut
+	ld e, 0b00000000
+	call PIOOut
+	ld e, 0b00000000
+	call PIOOut
+
+	; bottom right
+	ld d, DSP_IW
+	ld e, 0b01011000
+	call PIOOut
+
+	ld d, DSP_DW
+
+	ld e, 0b00000000
+	call PIOOut
+	ld e, 0b00010100
+	call PIOOut
+	ld e, 0b00010100
+	call PIOOut
+	ld e, 0b00011100
+	call PIOOut
+	ld e, 0b00000100
+	call PIOOut
+	ld e, 0b00000100
+	call PIOOut
+	ld e, 0b00000000
+	call PIOOut
+	ld e, 0b00000000
+	call PIOOut
+
+
+	; boundaries
+	; left
+	ld d, DSP_IW
+	ld e, 0b01100000
+	call PIOOut
+
+	ld d, DSP_DW
+
+	ld e, 0b00000001
+	call PIOOut
+	ld e, 0b00000001
+	call PIOOut
+	ld e, 0b00000001
+	call PIOOut
+	ld e, 0b00000001
+	call PIOOut
+	ld e, 0b00000001
+	call PIOOut
+	ld e, 0b00000001
+	call PIOOut
+	ld e, 0b00000001
+	call PIOOut
+	ld e, 0b00000001
+	call PIOOut
+
+	; right
+	ld d, DSP_IW
+	ld e, 0b01101000
+	call PIOOut
+
+	ld d, DSP_DW
+	ld e, 0b00010000
+	call PIOOut
+	ld e, 0b00010000
+	call PIOOut
+	ld e, 0b10010000
+	call PIOOut
+	ld e, 0b00010000
+	call PIOOut
+	ld e, 0b00010000
+	call PIOOut
+	ld e, 0b10110000
+	call PIOOut
+	ld e, 0b00010000
+	call PIOOut
+	ld e, 0b00010000
+	call PIOOut
+
+	; uncomment this line to mark quad characeters
+	; ret
+
+
 
 	ret
 

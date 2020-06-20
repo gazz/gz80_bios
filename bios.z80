@@ -41,7 +41,7 @@ SPADDR	equ 0x1000
 #code _CODE
 
 
-WELCOME .asciz 	"gz80, v0.21        "
+WELCOME .asciz 	"gazz80, v0.21      "
 SHELL .asciz 	" >                 "
 
 TMP_APP_INIT defb 0xdf, 0xfd, 5, 0xab, 0xc8, 0x00, 0x00, 0x00
