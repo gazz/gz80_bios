@@ -1,6 +1,7 @@
 
 ;longwait equ 0x10
 wait equ 0x6E
+exwait equ $007B
 longwait equ 0x85
 charout equ 0xa1
 drawchar equ 0x8F
@@ -131,12 +132,6 @@ move:
 #local
 	ld a, (keystroke + 1)
 
-	; check that we start with 5b
-	sub 0xf0
-	ret nz
-
-	ld a, (keystroke + 2)
-
 	push af
 	sub 6bh
 	call z, moveleft
@@ -241,6 +236,7 @@ runloop:
 	;call wait_keystroke
 
 	call wait_ps2_scancode
+	call scancode_to_keystroke
 
 	; move
 	call move
@@ -346,7 +342,6 @@ init_ps2_keyboard:
 	pop hl
 	ret
 
-
 ; waits on a scancode via serial port B that is wired up to PS/2 keyboard
 scancode defs 4, 00h
 wait_ps2_scancode:
@@ -361,9 +356,20 @@ wait_ps2_scancode:
 	ld (hl), 0
 	inc hl
 	ld (hl), 0
-	ld hl, keystroke
+	ld hl, scancode
 
 #local
+	jp poll
+
+sink_break_code:
+	in a, (SERBC)
+	bit 0, a
+	jr z, sink_break_code
+
+	in a, (SERB)
+	pop af
+	jp done
+
 poll:
 	in a, (SERBC)
 	bit 0, a
@@ -375,6 +381,14 @@ poll:
 	; load the code into hl[1]
 	inc hl
 	in a, (SERB)
+
+	push af
+	; ignore break codes
+	sub 0xf0
+	jp z, sink_break_code
+	pop af
+
+	; real scancode
 	ld (hl), a
 
 	;jp done
@@ -401,11 +415,28 @@ poll:
 	ld (hl), a
 
 done:
-	ld hl, keystroke
+	ld hl, scancode
 	ld (hl), b
 #endlocal
 	pop de
 	pop bc
+	pop hl
+	ret
+
+scancode_to_keystroke:
+	push hl
+	push de
+	push bc
+
+	; test only => copy pure scancode into keystroke
+	ld de, keystroke
+	ld hl, scancode
+	ld b, 0
+	ld c, 4
+	ldir
+
+	pop bc
+	pop de
 	pop hl
 	ret
 
