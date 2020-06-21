@@ -43,7 +43,7 @@ moveup:
 movedown:
 	ld hl, ypos
 	ld a, (hl)
-	sub 1
+	sub 16
 	ret z
 	inc (hl)
 	ret
@@ -59,7 +59,7 @@ moveleft:
 moveright:
 	ld hl, xpos
 	ld a, (hl)
-	sub 15
+	sub 9
 	ret z
 	inc (hl)
 	ret
@@ -157,7 +157,7 @@ moverow:
 
 	call SetCaretRaw
 
-	ld e, 0
+	ld e, '+'
 	ld d, DSP_DW
 	call PIOOut
 
@@ -197,31 +197,29 @@ main:
 	call ClearDisplay
 	call reset_pos
 	call DisableCursor
-
+	call write_player_chars_to_cgram
+	call write_boundaries_chars
 
 runloop:
-	call write_player_chars_to_cgram
 
-	call ClearDisplay
+	;call ClearDisplay
 
 	call output_keycode
 
 	; render
-	call draw_player_location
-	call draw_player
-
 	call draw_field
+	call draw_player_location
+	; call draw_player
 
 	; wait for input
-	; call wait_keystroke
-
 	call Wait_PS2ScanCode
 	call scancode_to_keystroke
 
 	; move
 	call move
+	call update_field_chars
 
-	jp runloop
+	jr runloop
 
 exit:
 	;halt
@@ -236,7 +234,7 @@ draw_field:
 	; 
 	; move cursor to the fields entry
 	ld b, 0
-	ld c, 6
+	ld c, 5
 	call SetCaretRaw
 
 	ld d, DSP_DW
@@ -256,7 +254,7 @@ draw_field:
 
 	; second line
 	ld b, 64
-	ld c, 6
+	ld c, 5
 	call SetCaretRaw
 
 	ld d, DSP_DW
@@ -272,8 +270,96 @@ draw_field:
 
 	ret
 
+LEFT_EDGE equ 0b01100000
+RIGHT_EDGE equ 0b01101000
+
+FIELD_TOP_LEFT equ 0b01000000
+FIELD_TOP_RIGHT equ 0b01001000
+FIELD_BOTTOM_LEFT equ 0b01010000
+FIELD_BOTTOM_RIGHT equ 0b01011000
+
+EMPTY_CHAR 	defb	0b00000000
+			defb	0b00000000
+			defb	0b00000000
+			defb	0b00000000
+			defb	0b00000000
+			defb	0b00000000
+			defb	0b00000000
+			defb	0b00000000
+
+LEFT_EDGE_CHAR 	defb	0b00000001
+				defb	0b00000001
+				defb	0b00000001
+				defb	0b00000001
+				defb	0b00000001
+				defb	0b00000001
+				defb	0b00000001
+				defb	0b00000001
+
+RIGHT_EDGE_CHAR 	defb	0b00010000
+					defb	0b00010000
+					defb	0b00010000
+					defb	0b00010000
+					defb	0b00010000
+					defb	0b00010000
+					defb	0b00010000
+					defb	0b00010000
+
+CUSTOM_1_CHAR 	defb	0b00000000
+				defb	0b00000000
+				defb	0b00000010
+				defb	0b00000010
+				defb	0b00000010
+				defb	0b00000010
+				defb	0b00000010
+				defb	0b00000000
+
+CUSTOM_3_CHAR 	defb	0b00000000
+				defb	0b00000000
+				defb	0b00001110
+				defb	0b00000010
+				defb	0b00001110
+				defb	0b00000010
+				defb	0b00001110
+				defb	0b00000000
+
+CUSTOM_2_CHAR 	defb	0b00000000
+				defb	0b00000000
+				defb	0b00001110
+				defb	0b00000010
+				defb	0b00001110
+				defb	0b00001000
+				defb	0b00001110
+				defb	0b00000000
+
+
+CUSTOM_4_CHAR 	defb	0b00000000
+				defb	0b00000000
+				defb	0b00001010
+				defb	0b00001010
+				defb	0b00001110
+				defb	0b00000010
+				defb	0b00000010
+				defb	0b00000000
+
+
+PLAYAREA defs 11 * 17, 3
+
+
+write_write_char_to_cgram:
+	ld d, DSP_DW
+	ld b, 8
+#local
+nextchar:
+	ld e, (hl)
+	call PIOOut
+	inc hl
+	djnz nextchar
+#endlocal
+	ret
 
 write_player_chars_to_cgram:
+	push de
 	; CGRAM address is b0000*000..b0000*111 is custom chars
 	; that gives us 0x00..0x7, so 8 custom characters in CGRAM
 	; d is control address
@@ -284,158 +370,162 @@ write_player_chars_to_cgram:
 	; BRUTE FORCE PIXEL PUSH
 	; Characeter top/left
 	ld d, DSP_IW
-	ld e, 0b01000000
+	ld e, FIELD_TOP_LEFT
 	call PIOOut
 
-	ld d, DSP_DW
-
-	ld e, 0b00000000
-	call PIOOut
-	ld e, 0b00000100
-	call PIOOut
-	ld e, 0b00000100
-	call PIOOut
-	ld e, 0b00000100
-	call PIOOut
-	ld e, 0b00000100
-	call PIOOut
-	ld e, 0b00000100
-	call PIOOut
-	ld e, 0b00000000
-	call PIOOut
-	ld e, 0b00000000
-	call PIOOut
-
+	ld hl, CUSTOM_1_CHAR
+	call write_write_char_to_cgram
 
 	; top right
 	ld d, DSP_IW
-	ld e, 0b01001000
+	ld e, FIELD_TOP_RIGHT
 	call PIOOut
 
-	ld d, DSP_DW
-
-	ld e, 0b00000000
-	call PIOOut
-	ld e, 0b00011100
-	call PIOOut
-	ld e, 0b00000100
-	call PIOOut
-	ld e, 0b00011100
-	call PIOOut
-	ld e, 0b00010000
-	call PIOOut
-	ld e, 0b00011100
-	call PIOOut
-	ld e, 0b00000000
-	call PIOOut
-	ld e, 0b00000000
-	call PIOOut
-
+	ld hl, CUSTOM_2_CHAR
+	call write_write_char_to_cgram
 
 	; bottom left
 	ld d, DSP_IW
-	ld e, 0b01010000
+	ld e, FIELD_BOTTOM_LEFT
 	call PIOOut
 
-	ld d, DSP_DW
-
-	ld e, 0b00000000
-	call PIOOut
-	ld e, 0b00011100
-	call PIOOut
-	ld e, 0b00000100
-	call PIOOut
-	ld e, 0b00011100
-	call PIOOut
-	ld e, 0b00000100
-	call PIOOut
-	ld e, 0b00011100
-	call PIOOut
-	ld e, 0b00000000
-	call PIOOut
-	ld e, 0b00000000
-	call PIOOut
+	ld hl, CUSTOM_3_CHAR
+	call write_write_char_to_cgram
 
 	; bottom right
 	ld d, DSP_IW
-	ld e, 0b01011000
+	ld e, FIELD_BOTTOM_RIGHT
 	call PIOOut
 
-	ld d, DSP_DW
+	ld hl, CUSTOM_4_CHAR
+	call write_write_char_to_cgram
 
-	ld e, 0b00000000
-	call PIOOut
-	ld e, 0b00010100
-	call PIOOut
-	ld e, 0b00010100
-	call PIOOut
-	ld e, 0b00011100
-	call PIOOut
-	ld e, 0b00000100
-	call PIOOut
-	ld e, 0b00000100
-	call PIOOut
-	ld e, 0b00000000
-	call PIOOut
-	ld e, 0b00000000
-	call PIOOut
+	pop de
+	ret
 
 
+clear_char:
+	push de
+	ld hl, EMPTY_CHAR
+	call write_write_char_to_cgram
+	pop de
+	ret
+
+update_field_chars:
+	push de
+	push bc
+#local
+	; clear out playground
+
+	ld hl, EMPTY_CHAR
+	ld de, CUSTOM_1_CHAR
+	ld bc, 8
+	ldir
+
+	ld hl, EMPTY_CHAR
+	ld de, CUSTOM_2_CHAR
+	ld bc, 8
+	ldir
+
+	ld hl, EMPTY_CHAR
+	ld de, CUSTOM_3_CHAR
+	ld bc, 8
+	ldir
+
+	ld hl, EMPTY_CHAR
+	ld de, CUSTOM_4_CHAR
+	ld bc, 8
+	ldir
+
+	; try to light up the player dot
+	; figure out which quadrant it belongs to
+
+	; check invisible pixels
+	ld a, (xpos)
+	cp 5
+	jp z, nothing_to_do_here
+
+	ld a, (ypos)
+	cp 8
+	jp z, nothing_to_do_here
+
+	ld a, (xpos)
+	cp 5
+	; C is set -> char1 or char3 (we use empty pixel offset to avoid checking Z flag too)
+	; => char 2 or char4 otherwise
+	jr nc, second_col
+	ld hl, CUSTOM_1_CHAR
+	ld b, a
+	jr col_set
+second_col:	
+	ld hl, CUSTOM_2_CHAR
+	sub a, 5
+	ld b, a
+col_set:
+	
+	push bc
+	push de
+	ld a, (ypos)
+	cp 0
+	jr z, row_offset_calculated
+
+	ld b, a
+	cp 8
+	jr z, row_offset_calculated
+	jr c, no_pad
+	dec b
+;	jr nc, no_pad
+	; we need to remove one vert offset line to adjust for invisible row
+;	dec b
+no_pad:
+next_row:
+	inc hl
+	djnz next_row
+
+row_offset_calculated:
+	pop de
+	pop bc
+
+	ld a, b
+	or 0
+	ld a, 0b00010000
+	jr z, zero_offset
+shift_char_hor:
+	sra a
+	djnz shift_char_hor
+zero_offset:
+
+	ld (hl), a
+
+nothing_to_do_here:
+	call write_player_chars_to_cgram
+
+#endlocal
+	pop bc
+	pop de
+	ret
+
+write_boundaries_chars:
+	push de
 	; boundaries
 	; left
 	ld d, DSP_IW
-	ld e, 0b01100000
+	ld e, LEFT_EDGE
 	call PIOOut
 
-	ld d, DSP_DW
-
-	ld e, 0b00000001
-	call PIOOut
-	ld e, 0b00000001
-	call PIOOut
-	ld e, 0b00000001
-	call PIOOut
-	ld e, 0b00000001
-	call PIOOut
-	ld e, 0b00000001
-	call PIOOut
-	ld e, 0b00000001
-	call PIOOut
-	ld e, 0b00000001
-	call PIOOut
-	ld e, 0b00000001
-	call PIOOut
+	ld hl, LEFT_EDGE_CHAR
+	call write_write_char_to_cgram
 
 	; right
 	ld d, DSP_IW
-	ld e, 0b01101000
+	ld e, RIGHT_EDGE
 	call PIOOut
 
-	ld d, DSP_DW
-	ld e, 0b00010000
-	call PIOOut
-	ld e, 0b00010000
-	call PIOOut
-	ld e, 0b10010000
-	call PIOOut
-	ld e, 0b00010000
-	call PIOOut
-	ld e, 0b00010000
-	call PIOOut
-	ld e, 0b10110000
-	call PIOOut
-	ld e, 0b00010000
-	call PIOOut
-	ld e, 0b00010000
-	call PIOOut
+	ld hl, RIGHT_EDGE_CHAR
+	call write_write_char_to_cgram
 
-	; uncomment this line to mark quad characeters
-	; ret
-
-
-
+	pop de
 	ret
-
 
 scancode_to_keystroke:
 	push hl
