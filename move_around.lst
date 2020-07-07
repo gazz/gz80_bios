@@ -1,25 +1,36 @@
                         ; --------------------------------------
                         ; zasm: assemble "move_around.z80"
-                        ; date: 2020-06-21 13:46:46
+                        ; date: 2020-07-07 17:33:12
                         ; --------------------------------------
 
 
                         
 00F7:                   ClearDisplay equ 0xf7
-007C:                   PIOOut equ 0x7c
+054F:                   PIOOut equ 0x054F
 0348:                   ApplicationReturn equ 0x348
                         ; set caret anywhere on the screen
                         ; b - offset, 64 (0x40) is 2nd line
                         ; c - offset on the line
-011C:                   SetCaretRaw equ 0x11C
-0001:                   DSP_IW	equ	0x1
+011C:                   SetCaretRaw_bios equ 0x11C
+                        
+                        ; PIO direct access
+0001:                   DSP_IW	equ	0b00000001
+0003:                   DSP_IR	equ 0b00000011
+0002:                   DSP_IRC	equ 0b00000010
 0005:                   DSP_DW	equ	0x5
+0004:                   PORTA 	equ 0x4
+0005:                   PORTB 	equ 0x5
+0006:                   PORTAC 	equ 0x6
+0007:                   PORTBC 	equ 0x7
+                        
 047B:                   OutHex equ $047B
+0292:                   NumToHex equ $0292
 0497:                   DisableCursor equ $0497
 04F8:                   Wait_PS2ScanCode equ $04F8
                         ; there are RAM mapped
 083E:                   STATE_KEYSTROKE equ $083E
 0842:                   STATE_SCANCODE equ $0842
+0060:                   Wait equ 0x60
                         
                         
                         
@@ -28,253 +39,252 @@
                         #code _CODE
                         
                         ; app entry point
-0882: C34F09   [10]     	jp main
+0882: C34909   [10]     	jp main
                         
 0885: 00                xpos defb 0
 0886: 00                ypos defb 0
                         
-0887:                   rawout:
-0887: 1605     [ 7]     	ld d, DSP_DW
-0889: CD7C00   [24]     	call PIOOut
-088C: C9       [34]     	ret
                         
-088D:                   moveup:
-088D: 218608   [10]     	ld hl, ypos
-0890: 7E       [17]     	ld a, (hl)
-0891: F600     [24]     	or 0
-0893: C8       [29|35]  	ret z
-0894: 35       [40]     	dec (hl)
-0895: C9       [50]     	ret
+0887:                   moveup:
+0887: 218608   [10]     	ld hl, ypos
+088A: 7E       [17]     	ld a, (hl)
+088B: F600     [24]     	or 0
+088D: C8       [29|35]  	ret z
+088E: 35       [40]     	dec (hl)
+088F: C9       [50]     	ret
                         
-0896:                   movedown:
-0896: 218608   [10]     	ld hl, ypos
-0899: 7E       [17]     	ld a, (hl)
-089A: D610     [24]     	sub 16
-089C: C8       [29|35]  	ret z
-089D: 34       [40]     	inc (hl)
-089E: C9       [50]     	ret
+0890:                   movedown:
+0890: 218608   [10]     	ld hl, ypos
+0893: 7E       [17]     	ld a, (hl)
+0894: D610     [24]     	sub 16
+0896: C8       [29|35]  	ret z
+0897: 34       [40]     	inc (hl)
+0898: C9       [50]     	ret
                         
-089F:                   moveleft:
-089F: 218508   [10]     	ld hl, xpos
-08A2: 7E       [17]     	ld a, (hl)
-08A3: F600     [24]     	or 0
-08A5: C8       [29|35]  	ret z
-08A6: 35       [40]     	dec (hl)
-08A7: C9       [50]     	ret
+0899:                   moveleft:
+0899: 218508   [10]     	ld hl, xpos
+089C: 7E       [17]     	ld a, (hl)
+089D: F600     [24]     	or 0
+089F: C8       [29|35]  	ret z
+08A0: 35       [40]     	dec (hl)
+08A1: C9       [50]     	ret
                         
-08A8:                   moveright:
-08A8: 218508   [10]     	ld hl, xpos
-08AB: 7E       [17]     	ld a, (hl)
-08AC: D609     [24]     	sub 9
-08AE: C8       [29|35]  	ret z
-08AF: 34       [40]     	inc (hl)
-08B0: C9       [50]     	ret
+08A2:                   moveright:
+08A2: 218508   [10]     	ld hl, xpos
+08A5: 7E       [17]     	ld a, (hl)
+08A6: D609     [24]     	sub 9
+08A8: C8       [29|35]  	ret z
+08A9: 34       [40]     	inc (hl)
+08AA: C9       [50]     	ret
                          
-08B1:                   reset_2nd_line:
-08B1: C5       [11]     	push bc
-08B2: 0640     [18]     	ld b, 64
-08B4: 0E00     [25]     	ld c, 0
-08B6: CD1C01   [42]     	call SetCaretRaw
-08B9: C1       [52]     	pop bc
-08BA: C9       [62]     	ret
+08AB:                   reset_2nd_line:
+08AB: C5       [11]     	push bc
+08AC: 0640     [18]     	ld b, 64
+08AE: 0E00     [25]     	ld c, 0
+08B0: CD9F0B   [42]     	call SetCaretRaw
+08B3: C1       [52]     	pop bc
+08B4: C9       [62]     	ret
                         
-08BB:                   output_keycode:
-08BB: C5       [11]     	push bc
-08BC: D5       [22]     	push de
-08BD: E5       [33]     	push hl
+08B5:                   output_keycode:
+08B5: C5       [11]     	push bc
+08B6: D5       [22]     	push de
+08B7: E5       [33]     	push hl
                         #local
                         	; output currently pressed key code on the 2nd line of lcd
-08BE: 0640     [40]     	ld b, 64
-08C0: 0E00     [47]     	ld c, 0
-08C2: CD1C01   [64]     	call SetCaretRaw
+08B8: 0640     [40]     	ld b, 64
+08BA: 0E00     [47]     	ld c, 0
+08BC: CD9F0B   [64]     	call SetCaretRaw
                         
-08C5: 213E08   [74]     	ld hl, STATE_KEYSTROKE
+08BF: 213E08   [74]     	ld hl, STATE_KEYSTROKE
                         	; quick check if we have any keystroke chars
-08C8: 7E       [81]     	ld a, (hl)
-08C9: F600     [88]     	or 0
-08CB: CAD708   [98|98]  	jp z, done
-08CE: 47       [102]    	ld b, a
-08CF: 23       [108]    	inc hl
-08D0:                   outcode:	
-08D0: 7E       [ 7]     	ld a, (hl)
-08D1: CD7B04   [24]     	call OutHex
-08D4: 23       [30]     	inc hl
-08D5: 10F9     [38|43]  	djnz outcode
+08C2: 7E       [81]     	ld a, (hl)
+08C3: F600     [88]     	or 0
+08C5: CAD108   [98|98]  	jp z, done
+08C8: 47       [102]    	ld b, a
+08C9: 23       [108]    	inc hl
+08CA:                   outcode:	
+08CA: 7E       [ 7]     	ld a, (hl)
+08CB: CD7B04   [24]     	call OutHex
+08CE: 23       [30]     	inc hl
+08CF: 10F9     [38|43]  	djnz outcode
                         
-08D7:                   done:	
+08D1:                   done:	
                         #endlocal
                         	; transform A register to d & e codes
-08D7: E1       [10]     	pop hl
-08D8: D1       [20]     	pop de
-08D9: C1       [30]     	pop bc
-08DA: C9       [40]     	ret
+08D1: E1       [10]     	pop hl
+08D2: D1       [20]     	pop de
+08D3: C1       [30]     	pop bc
+08D4: C9       [40]     	ret
                         
-08DB:                   move:
+08D5:                   move:
                         #local
-08DB: 3A3F08   [13]     	ld a, (STATE_KEYSTROKE + 1)
+08D5: 3A3F08   [13]     	ld a, (STATE_KEYSTROKE + 1)
                         
-08DE: F5       [24]     	push af
-08DF: D66B     [31]     	sub 6bh
-08E1: CC9F08   [41|48]  	call z, moveleft
-08E4: F1       [51]     	pop af
+08D8: F5       [24]     	push af
+08D9: D66B     [31]     	sub 6bh
+08DB: CC9908   [41|48]  	call z, moveleft
+08DE: F1       [51]     	pop af
                         
-08E5: F5       [62]     	push af
-08E6: D674     [69]     	sub 74h
-08E8: CCA808   [79|86]  	call z, moveright
-08EB: F1       [89]     	pop af
+08DF: F5       [62]     	push af
+08E0: D674     [69]     	sub 74h
+08E2: CCA208   [79|86]  	call z, moveright
+08E5: F1       [89]     	pop af
                         
-08EC: F5       [100]    	push af
-08ED: D675     [107]    	sub 75h
-08EF: CC8D08   [117|124]	call z, moveup
-08F2: F1       [127]    	pop af
+08E6: F5       [100]    	push af
+08E7: D675     [107]    	sub 75h
+08E9: CC8708   [117|124]	call z, moveup
+08EC: F1       [127]    	pop af
                         
-08F3: F5       [138]    	push af
-08F4: D672     [145]    	sub 72h
-08F6: CC9608   [155|162]	call z, movedown
-08F9: F1       [165]    	pop af
+08ED: F5       [138]    	push af
+08EE: D672     [145]    	sub 72h
+08F0: CC9008   [155|162]	call z, movedown
+08F3: F1       [165]    	pop af
                         
                         #endlocal
-08FA: C9       [175]    	ret
+08F4: C9       [175]    	ret
                         
-08FB:                   reset_pos:
-08FB: E5       [11]     	push hl
-08FC: 218508   [21]     	ld hl, xpos
-08FF: 3600     [31]     	ld (hl), 0
-0901: 218608   [41]     	ld hl, ypos
-0904: 3600     [51]     	ld (hl), 0
-0906: E1       [61]     	pop hl
-0907: C9       [71]     	ret
+08F5:                   reset_pos:
+08F5: E5       [11]     	push hl
+08F6: 218508   [21]     	ld hl, xpos
+08F9: 3600     [31]     	ld (hl), 0
+08FB: 218608   [41]     	ld hl, ypos
+08FE: 3600     [51]     	ld (hl), 0
+0900: E1       [61]     	pop hl
+0901: C9       [71]     	ret
                         
-0908:                   draw_player:
-0908: C5       [11]     	push bc
-0909: E5       [22]     	push hl
-090A: D5       [33]     	push de
+0902:                   draw_player:
+0902: C5       [11]     	push bc
+0903: E5       [22]     	push hl
+0904: D5       [33]     	push de
                         #local
-090B: 3A8608   [46]     	ld a, (ypos)
-090E: 47       [50]     	ld b, a
-090F: 3E00     [57]     	ld a, 0
-0911:                   moverow:
-0911: C640     [ 7]     	add a, 64
-0913: 10FC     [15|20]  	djnz moverow
-0915: 47       [19]     	ld b, a
+0905: 3A8608   [46]     	ld a, (ypos)
+0908: 47       [50]     	ld b, a
+0909: 3E00     [57]     	ld a, 0
+090B:                   moverow:
+090B: C640     [ 7]     	add a, 64
+090D: 10FC     [15|20]  	djnz moverow
+090F: 47       [19]     	ld b, a
                         	
-0916: 218508   [29]     	ld hl, xpos
-0919: 4E       [36]     	ld c, (hl)
+0910: 218508   [29]     	ld hl, xpos
+0913: 4E       [36]     	ld c, (hl)
                         
-091A: CD1C01   [53]     	call SetCaretRaw
+0914: CD9F0B   [53]     	call SetCaretRaw
                         
-091D: 1E2B     [60]     	ld e, '+'
-091F: 1605     [67]     	ld d, DSP_DW
-0921: CD7C00   [84]     	call PIOOut
+0917: 1E2B     [60]     	ld e, '+'
+0919: 1605     [67]     	ld d, DSP_DW
+091B: CD4F05   [84]     	call PIOOut
                         
                         #endlocal
-0924: D1       [94]     	pop de
-0925: E1       [104]    	pop hl
-0926: C1       [114]    	pop bc
-0927: C9       [124]    	ret
+091E: D1       [94]     	pop de
+091F: E1       [104]    	pop hl
+0920: C1       [114]    	pop bc
+0921: C9       [124]    	ret
                         
-0928:                   draw_player_location:
-0928: 0640     [ 7]     	ld b, 64
-092A: 0E0B     [14]     	ld c, 11
-092C: CD1C01   [31]     	call SetCaretRaw
+0922:                   draw_player_location:
+0922: 0640     [ 7]     	ld b, 64
+0924: 0E0B     [14]     	ld c, 11
+0926: CD9F0B   [31]     	call SetCaretRaw
                         
-092F: 1605     [38]     	ld d, DSP_DW
-0931: 1E5B     [45]     	ld e, '['
-0933: CD7C00   [62]     	call PIOOut
+0929: 1605     [38]     	ld d, DSP_DW
+092B: 1E5B     [45]     	ld e, '['
+092D: CD4F05   [62]     	call PIOOut
                         
-0936: 3A8508   [75]     	ld a, (xpos)
-0939: CD7B04   [92]     	call OutHex
+0930: 3A8508   [75]     	ld a, (xpos)
+0933: CD7B04   [92]     	call OutHex
                         
-093C: 1E2C     [99]     	ld e, ','
-093E: CD7C00   [116]    	call PIOOut
+0936: 1E2C     [99]     	ld e, ','
+0938: CD4F05   [116]    	call PIOOut
                         
-0941: 3A8608   [129]    	ld a, (ypos)
-0944: CD7B04   [146]    	call OutHex
+093B: 3A8608   [129]    	ld a, (ypos)
+093E: CD7B04   [146]    	call OutHex
                         
-0947: 1605     [153]    	ld d, DSP_DW
-0949: 1E5D     [160]    	ld e, ']'
-094B: CD7C00   [177]    	call PIOOut
+0941: 1605     [153]    	ld d, DSP_DW
+0943: 1E5D     [160]    	ld e, ']'
+0945: CD4F05   [177]    	call PIOOut
                         
-094E: C9       [187]    	ret	
+0948: C9       [187]    	ret	
                         
-094F:                   main:
-094F: 213E08   [10]     	ld hl, STATE_KEYSTROKE
-0952: 3600     [20]     	ld (hl), 0
-0954: CDF700   [37]     	call ClearDisplay
-0957: CDFB08   [54]     	call reset_pos
-095A: CD9704   [71]     	call DisableCursor
-095D: CDB70A   [88]     	call write_player_chars_to_cgram
-0960: CD700B   [105]    	call write_boundaries_chars
-                        
-0963:                   runloop:
-                        
-                        	;call ClearDisplay
-                        
-0963: CDBB08   [17]     	call output_keycode
+0949:                   main:
+0949: 213E08   [10]     	ld hl, STATE_KEYSTROKE
+094C: 3600     [20]     	ld (hl), 0
+094E: CDF700   [37]     	call ClearDisplay
+0951: CDF508   [54]     	call reset_pos
+0954: CD9704   [71]     	call DisableCursor
+0957: CDAE0A   [88]     	call write_player_chars_to_cgram
+095A: CD670B   [105]    	call write_boundaries_chars
                         
                         	; render
-0966: CD7D09   [34]     	call draw_field
-0969: CD2809   [51]     	call draw_player_location
+095D: CD7409   [122]    	call draw_field
+                        
+0960:                   runloop:
+                        
+                        	;call cleardisplay_fast
+                        	;call ClearDisplay
+                        
+                        	;	call output_keycode
+                        
+0960: CD2209   [17]     	call draw_player_location
+                        
                         	; call draw_player
                         
                         	; wait for input
-096C: CDF804   [68]     	call Wait_PS2ScanCode
-096F: CD8D0B   [85]     	call scancode_to_keystroke
+0963: CDF804   [34]     	call Wait_PS2ScanCode
+0966: CD840B   [51]     	call scancode_to_keystroke
                         
                         	; move
-0972: CDDB08   [102]    	call move
-0975: CDF70A   [119]    	call update_field_chars
+0969: CDD508   [68]     	call move
+096C: CDEE0A   [85]     	call update_field_chars
                         
-0978: 18E9     [131]    	jr runloop
+096F: 18EF     [97]     	jr runloop
                         
-097A:                   exit:
+0971:                   exit:
                         	;halt
-097A: C34803   [10]     	jp ApplicationReturn
+0971: C34803   [10]     	jp ApplicationReturn
                         
                         
-097D:                   draw_field:
+0974:                   draw_field:
                         	; set caret anywhere on the screen
                         	; b - offset, 64 (0x40) is 2nd line
                         	; c - offset on the line
                         	; call SetCaretRaw after
                         	; 
                         	; move cursor to the fields entry
-097D: 0600     [ 7]     	ld b, 0
-097F: 0E05     [14]     	ld c, 5
-0981: CD1C01   [31]     	call SetCaretRaw
+0974: 0600     [ 7]     	ld b, 0
+0976: 0E05     [14]     	ld c, 5
+0978: CD9F0B   [31]     	call SetCaretRaw
                         
-0984: 1605     [38]     	ld d, DSP_DW
+097B: 1605     [38]     	ld d, DSP_DW
                         
-0986: 1E04     [45]     	ld e, 4
-0988: CD7C00   [62]     	call PIOOut
+097D: 1E04     [45]     	ld e, 4
+097F: CD4F05   [62]     	call PIOOut
                         
-098B: 1E00     [69]     	ld e, 0
-098D: CD7C00   [86]     	call PIOOut
+0982: 1E00     [69]     	ld e, 0
+0984: CD4F05   [86]     	call PIOOut
                         
-0990: 1E01     [93]     	ld e, 1
-0992: CD7C00   [110]    	call PIOOut
+0987: 1E01     [93]     	ld e, 1
+0989: CD4F05   [110]    	call PIOOut
                         
-0995: 1E05     [117]    	ld e, 5
-0997: CD7C00   [134]    	call PIOOut
+098C: 1E05     [117]    	ld e, 5
+098E: CD4F05   [134]    	call PIOOut
                         
                         
                         	; second line
-099A: 0640     [141]    	ld b, 64
-099C: 0E05     [148]    	ld c, 5
-099E: CD1C01   [165]    	call SetCaretRaw
+0991: 0640     [141]    	ld b, 64
+0993: 0E05     [148]    	ld c, 5
+0995: CD9F0B   [165]    	call SetCaretRaw
                         
-09A1: 1605     [172]    	ld d, DSP_DW
+0998: 1605     [172]    	ld d, DSP_DW
                         
-09A3: 1E04     [179]    	ld e, 4
-09A5: CD7C00   [196]    	call PIOOut
-09A8: 1E02     [203]    	ld e, 2
-09AA: CD7C00   [220]    	call PIOOut
-09AD: 1E03     [227]    	ld e, 3
-09AF: CD7C00   [244]    	call PIOOut
-09B2: 1E05     [251]    	ld e, 5
-09B4: CD7C00   [268]    	call PIOOut
+099A: 1E04     [179]    	ld e, 4
+099C: CD4F05   [196]    	call PIOOut
+099F: 1E02     [203]    	ld e, 2
+09A1: CD4F05   [220]    	call PIOOut
+09A4: 1E03     [227]    	ld e, 3
+09A6: CD4F05   [244]    	call PIOOut
+09A9: 1E05     [251]    	ld e, 5
+09AB: CD4F05   [268]    	call PIOOut
                         
-09B7: C9       [278]    	ret
+09AE: C9       [278]    	ret
                         
 0060:                   LEFT_EDGE equ 0b01100000
 0068:                   RIGHT_EDGE equ 0b01101000
@@ -284,89 +294,89 @@
 0050:                   FIELD_BOTTOM_LEFT equ 0b01010000
 0058:                   FIELD_BOTTOM_RIGHT equ 0b01011000
                         
-09B8: 00                EMPTY_CHAR 	defb	0b00000000
-09B9: 00                			defb	0b00000000
-09BA: 00                			defb	0b00000000
-09BB: 00                			defb	0b00000000
-09BC: 00                			defb	0b00000000
-09BD: 00                			defb	0b00000000
-09BE: 00                			defb	0b00000000
-09BF: 00                			defb	0b00000000
+09AF: 00                EMPTY_CHAR 	defb	0b00000000
+09B0: 00                			defb	0b00000000
+09B1: 00                			defb	0b00000000
+09B2: 00                			defb	0b00000000
+09B3: 00                			defb	0b00000000
+09B4: 00                			defb	0b00000000
+09B5: 00                			defb	0b00000000
+09B6: 00                			defb	0b00000000
                         
-09C0: 01                LEFT_EDGE_CHAR 	defb	0b00000001
-09C1: 01                				defb	0b00000001
-09C2: 01                				defb	0b00000001
-09C3: 01                				defb	0b00000001
-09C4: 01                				defb	0b00000001
-09C5: 01                				defb	0b00000001
-09C6: 01                				defb	0b00000001
-09C7: 01                				defb	0b00000001
+09B7: 01                LEFT_EDGE_CHAR 	defb	0b00000001
+09B8: 01                				defb	0b00000001
+09B9: 01                				defb	0b00000001
+09BA: 01                				defb	0b00000001
+09BB: 01                				defb	0b00000001
+09BC: 01                				defb	0b00000001
+09BD: 01                				defb	0b00000001
+09BE: 01                				defb	0b00000001
                         
-09C8: 10                RIGHT_EDGE_CHAR 	defb	0b00010000
-09C9: 10                					defb	0b00010000
-09CA: 10                					defb	0b00010000
-09CB: 10                					defb	0b00010000
-09CC: 10                					defb	0b00010000
-09CD: 10                					defb	0b00010000
-09CE: 10                					defb	0b00010000
-09CF: 10                					defb	0b00010000
+09BF: 10                RIGHT_EDGE_CHAR 	defb	0b00010000
+09C0: 10                					defb	0b00010000
+09C1: 10                					defb	0b00010000
+09C2: 10                					defb	0b00010000
+09C3: 10                					defb	0b00010000
+09C4: 10                					defb	0b00010000
+09C5: 10                					defb	0b00010000
+09C6: 10                					defb	0b00010000
                         
-09D0: 00                CUSTOM_1_CHAR 	defb	0b00000000
-09D1: 00                				defb	0b00000000
+09C7: 00                CUSTOM_1_CHAR 	defb	0b00000000
+09C8: 00                				defb	0b00000000
+09C9: 02                				defb	0b00000010
+09CA: 02                				defb	0b00000010
+09CB: 02                				defb	0b00000010
+09CC: 02                				defb	0b00000010
+09CD: 02                				defb	0b00000010
+09CE: 00                				defb	0b00000000
+                        
+09CF: 00                CUSTOM_3_CHAR 	defb	0b00000000
+09D0: 00                				defb	0b00000000
+09D1: 0E                				defb	0b00001110
 09D2: 02                				defb	0b00000010
-09D3: 02                				defb	0b00000010
+09D3: 0E                				defb	0b00001110
 09D4: 02                				defb	0b00000010
-09D5: 02                				defb	0b00000010
-09D6: 02                				defb	0b00000010
-09D7: 00                				defb	0b00000000
+09D5: 0E                				defb	0b00001110
+09D6: 00                				defb	0b00000000
                         
-09D8: 00                CUSTOM_3_CHAR 	defb	0b00000000
-09D9: 00                				defb	0b00000000
-09DA: 0E                				defb	0b00001110
-09DB: 02                				defb	0b00000010
-09DC: 0E                				defb	0b00001110
-09DD: 02                				defb	0b00000010
-09DE: 0E                				defb	0b00001110
-09DF: 00                				defb	0b00000000
-                        
-09E0: 00                CUSTOM_2_CHAR 	defb	0b00000000
-09E1: 00                				defb	0b00000000
-09E2: 0E                				defb	0b00001110
-09E3: 02                				defb	0b00000010
-09E4: 0E                				defb	0b00001110
-09E5: 08                				defb	0b00001000
-09E6: 0E                				defb	0b00001110
-09E7: 00                				defb	0b00000000
+09D7: 00                CUSTOM_2_CHAR 	defb	0b00000000
+09D8: 00                				defb	0b00000000
+09D9: 0E                				defb	0b00001110
+09DA: 02                				defb	0b00000010
+09DB: 0E                				defb	0b00001110
+09DC: 08                				defb	0b00001000
+09DD: 0E                				defb	0b00001110
+09DE: 00                				defb	0b00000000
                         
                         
-09E8: 00                CUSTOM_4_CHAR 	defb	0b00000000
-09E9: 00                				defb	0b00000000
-09EA: 0A                				defb	0b00001010
-09EB: 0A                				defb	0b00001010
-09EC: 0E                				defb	0b00001110
-09ED: 02                				defb	0b00000010
-09EE: 02                				defb	0b00000010
-09EF: 00                				defb	0b00000000
+09DF: 00                CUSTOM_4_CHAR 	defb	0b00000000
+09E0: 00                				defb	0b00000000
+09E1: 0A                				defb	0b00001010
+09E2: 0A                				defb	0b00001010
+09E3: 0E                				defb	0b00001110
+09E4: 02                				defb	0b00000010
+09E5: 02                				defb	0b00000010
+09E6: 00                				defb	0b00000000
                         
                         
-09F0: 03030303          PLAYAREA defs 11 * 17, 3
-09F4: 03...             
+09E7: 03030303          PLAYAREA defs 11 * 17, 3
+09EB: 03...             
                         
                         
-0AAB:                   write_write_char_to_cgram:
-0AAB: 1605     [ 7]     	ld d, DSP_DW
-0AAD: 0608     [14]     	ld b, 8
+0AA2:                   write_write_char_to_cgram:
+0AA2: 1605     [ 7]     	ld d, DSP_DW
+0AA4: 0608     [14]     	ld b, 8
                         #local
-0AAF:                   nextchar:
-0AAF: 5E       [ 7]     	ld e, (hl)
-0AB0: CD7C00   [24]     	call PIOOut
-0AB3: 23       [30]     	inc hl
-0AB4: 10F9     [38|43]  	djnz nextchar
+0AA6:                   nextchar:
+0AA6: 5E       [ 7]     	ld e, (hl)
+0AA7: CD4F05   [24]     	call PIOOut
+0AAA: 23       [30]     	inc hl
+0AAB: 10F9     [38|43]  	djnz nextchar
                         #endlocal
-0AB6: C9       [48]     	ret
+0AAD: C9       [48]     	ret
                         
-0AB7:                   write_player_chars_to_cgram:
-0AB7: D5       [11]     	push de
+0AAE:                   write_player_chars_to_cgram:
+0AAE: D5       [11]     	push de
                         	; CGRAM address is b0000*000..b0000*111 is custom chars
                         	; that gives us 0x00..0x7, so 8 custom characters in CGRAM
                         	; d is control address
@@ -376,180 +386,200 @@
                         
                         	; BRUTE FORCE PIXEL PUSH
                         	; Characeter top/left
-0AB8: 1601     [18]     	ld d, DSP_IW
-0ABA: 1E40     [25]     	ld e, FIELD_TOP_LEFT
-0ABC: CD7C00   [42]     	call PIOOut
+0AAF: 1601     [18]     	ld d, DSP_IW
+0AB1: 1E40     [25]     	ld e, FIELD_TOP_LEFT
+0AB3: CD4F05   [42]     	call PIOOut
                         
-0ABF: 21D009   [52]     	ld hl, CUSTOM_1_CHAR
-0AC2: CDAB0A   [69]     	call write_write_char_to_cgram
+0AB6: 21C709   [52]     	ld hl, CUSTOM_1_CHAR
+0AB9: CDA20A   [69]     	call write_write_char_to_cgram
                         
                         	; top right
-0AC5: 1601     [76]     	ld d, DSP_IW
-0AC7: 1E48     [83]     	ld e, FIELD_TOP_RIGHT
-0AC9: CD7C00   [100]    	call PIOOut
+0ABC: 1601     [76]     	ld d, DSP_IW
+0ABE: 1E48     [83]     	ld e, FIELD_TOP_RIGHT
+0AC0: CD4F05   [100]    	call PIOOut
                         
-0ACC: 21E009   [110]    	ld hl, CUSTOM_2_CHAR
-0ACF: CDAB0A   [127]    	call write_write_char_to_cgram
+0AC3: 21D709   [110]    	ld hl, CUSTOM_2_CHAR
+0AC6: CDA20A   [127]    	call write_write_char_to_cgram
                         
                         	; bottom left
-0AD2: 1601     [134]    	ld d, DSP_IW
-0AD4: 1E50     [141]    	ld e, FIELD_BOTTOM_LEFT
-0AD6: CD7C00   [158]    	call PIOOut
+0AC9: 1601     [134]    	ld d, DSP_IW
+0ACB: 1E50     [141]    	ld e, FIELD_BOTTOM_LEFT
+0ACD: CD4F05   [158]    	call PIOOut
                         
-0AD9: 21D809   [168]    	ld hl, CUSTOM_3_CHAR
-0ADC: CDAB0A   [185]    	call write_write_char_to_cgram
+0AD0: 21CF09   [168]    	ld hl, CUSTOM_3_CHAR
+0AD3: CDA20A   [185]    	call write_write_char_to_cgram
                         
                         	; bottom right
-0ADF: 1601     [192]    	ld d, DSP_IW
-0AE1: 1E58     [199]    	ld e, FIELD_BOTTOM_RIGHT
-0AE3: CD7C00   [216]    	call PIOOut
+0AD6: 1601     [192]    	ld d, DSP_IW
+0AD8: 1E58     [199]    	ld e, FIELD_BOTTOM_RIGHT
+0ADA: CD4F05   [216]    	call PIOOut
                         
-0AE6: 21E809   [226]    	ld hl, CUSTOM_4_CHAR
-0AE9: CDAB0A   [243]    	call write_write_char_to_cgram
+0ADD: 21DF09   [226]    	ld hl, CUSTOM_4_CHAR
+0AE0: CDA20A   [243]    	call write_write_char_to_cgram
                         
-0AEC: D1       [253]    	pop de
-0AED: C9       [263]    	ret
+0AE3: D1       [253]    	pop de
+0AE4: C9       [263]    	ret
                         
                         
-0AEE:                   clear_char:
+0AE5:                   clear_char:
+0AE5: D5       [11]     	push de
+0AE6: 21AF09   [21]     	ld hl, EMPTY_CHAR
+0AE9: CDA20A   [38]     	call write_write_char_to_cgram
+0AEC: D1       [48]     	pop de
+0AED: C9       [58]     	ret
+                        
+0AEE:                   update_field_chars:
 0AEE: D5       [11]     	push de
-0AEF: 21B809   [21]     	ld hl, EMPTY_CHAR
-0AF2: CDAB0A   [38]     	call write_write_char_to_cgram
-0AF5: D1       [48]     	pop de
-0AF6: C9       [58]     	ret
-                        
-0AF7:                   update_field_chars:
-0AF7: D5       [11]     	push de
-0AF8: C5       [22]     	push bc
+0AEF: C5       [22]     	push bc
                         #local
                         	; clear out playground
                         
-0AF9: 21B809   [32]     	ld hl, EMPTY_CHAR
-0AFC: 11D009   [42]     	ld de, CUSTOM_1_CHAR
-0AFF: 010800   [52]     	ld bc, 8
-0B02: EDB0     [68|21]  	ldir
+0AF0: 21AF09   [32]     	ld hl, EMPTY_CHAR
+0AF3: 11C709   [42]     	ld de, CUSTOM_1_CHAR
+0AF6: 010800   [52]     	ld bc, 8
+0AF9: EDB0     [68|21]  	ldir
                         
-0B04: 21B809   [78]     	ld hl, EMPTY_CHAR
-0B07: 11E009   [88]     	ld de, CUSTOM_2_CHAR
-0B0A: 010800   [98]     	ld bc, 8
-0B0D: EDB0     [114|21] 	ldir
+0AFB: 21AF09   [78]     	ld hl, EMPTY_CHAR
+0AFE: 11D709   [88]     	ld de, CUSTOM_2_CHAR
+0B01: 010800   [98]     	ld bc, 8
+0B04: EDB0     [114|21] 	ldir
                         
-0B0F: 21B809   [124]    	ld hl, EMPTY_CHAR
-0B12: 11D809   [134]    	ld de, CUSTOM_3_CHAR
-0B15: 010800   [144]    	ld bc, 8
-0B18: EDB0     [160|21] 	ldir
+0B06: 21AF09   [124]    	ld hl, EMPTY_CHAR
+0B09: 11CF09   [134]    	ld de, CUSTOM_3_CHAR
+0B0C: 010800   [144]    	ld bc, 8
+0B0F: EDB0     [160|21] 	ldir
                         
-0B1A: 21B809   [170]    	ld hl, EMPTY_CHAR
-0B1D: 11E809   [180]    	ld de, CUSTOM_4_CHAR
-0B20: 010800   [190]    	ld bc, 8
-0B23: EDB0     [206|21] 	ldir
+0B11: 21AF09   [170]    	ld hl, EMPTY_CHAR
+0B14: 11DF09   [180]    	ld de, CUSTOM_4_CHAR
+0B17: 010800   [190]    	ld bc, 8
+0B1A: EDB0     [206|21] 	ldir
                         
                         	; try to light up the player dot
                         	; figure out which quadrant it belongs to
                         
                         	; check invisible pixels
-0B25: 3A8508   [219]    	ld a, (xpos)
-0B28: FE05     [226]    	cp 5
-0B2A: CA6A0B   [236|236]	jp z, nothing_to_do_here
+0B1C: 3A8508   [219]    	ld a, (xpos)
+0B1F: FE05     [226]    	cp 5
+0B21: CA610B   [236|236]	jp z, nothing_to_do_here
                         
-0B2D: 3A8608   [249]    	ld a, (ypos)
-0B30: FE08     [256]    	cp 8
-0B32: CA6A0B   [266|266]	jp z, nothing_to_do_here
+0B24: 3A8608   [249]    	ld a, (ypos)
+0B27: FE08     [256]    	cp 8
+0B29: CA610B   [266|266]	jp z, nothing_to_do_here
                         
-0B35: 3A8508   [279]    	ld a, (xpos)
-0B38: FE05     [286]    	cp 5
+0B2C: 3A8508   [279]    	ld a, (xpos)
+0B2F: FE05     [286]    	cp 5
                         	; C is set -> char1 or char3 (we use empty pixel offset to avoid checking Z flag too)
                         	; => char 2 or char4 otherwise
-0B3A: 3006     [293|298]	jr nc, second_col
-0B3C: 21D009   [303]    	ld hl, CUSTOM_1_CHAR
-0B3F: 47       [307]    	ld b, a
-0B40: 1806     [319]    	jr col_set
-0B42:                   second_col:	
-0B42: 21E009   [10]     	ld hl, CUSTOM_2_CHAR
-0B45: D605     [17]     	sub a, 5
-0B47: 47       [21]     	ld b, a
-0B48:                   col_set:
+0B31: 3006     [293|298]	jr nc, second_col
+0B33: 21C709   [303]    	ld hl, CUSTOM_1_CHAR
+0B36: 47       [307]    	ld b, a
+0B37: 1806     [319]    	jr col_set
+0B39:                   second_col:	
+0B39: 21D709   [10]     	ld hl, CUSTOM_2_CHAR
+0B3C: D605     [17]     	sub a, 5
+0B3E: 47       [21]     	ld b, a
+0B3F:                   col_set:
                         	
-0B48: C5       [11]     	push bc
-0B49: D5       [22]     	push de
-0B4A: 3A8608   [35]     	ld a, (ypos)
-0B4D: FE00     [42]     	cp 0
-0B4F: 280B     [49|54]  	jr z, row_offset_calculated
+0B3F: C5       [11]     	push bc
+0B40: D5       [22]     	push de
+0B41: 3A8608   [35]     	ld a, (ypos)
+0B44: FE00     [42]     	cp 0
+0B46: 280B     [49|54]  	jr z, row_offset_calculated
                         
-0B51: 47       [53]     	ld b, a
-0B52: FE08     [60]     	cp 8
-0B54: 2806     [67|72]  	jr z, row_offset_calculated
-0B56: 3801     [74|79]  	jr c, no_pad
-0B58: 05       [78]     	dec b
-                        ;	jr nc, no_pad
-                        	; we need to remove one vert offset line to adjust for invisible row
-                        ;	dec b
-0B59:                   no_pad:
-0B59:                   next_row:
-0B59: 23       [ 6]     	inc hl
-0B5A: 10FD     [14|19]  	djnz next_row
+0B48: 47       [53]     	ld b, a
+0B49: FE08     [60]     	cp 8
+0B4B: 2806     [67|72]  	jr z, row_offset_calculated
+0B4D: 3801     [74|79]  	jr c, next_row
+0B4F: 05       [78]     	dec b
+0B50:                   next_row:
+0B50: 23       [ 6]     	inc hl
+0B51: 10FD     [14|19]  	djnz next_row
                         
-0B5C:                   row_offset_calculated:
-0B5C: D1       [10]     	pop de
-0B5D: C1       [20]     	pop bc
+0B53:                   row_offset_calculated:
+0B53: D1       [10]     	pop de
+0B54: C1       [20]     	pop bc
                         
-0B5E: 78       [24]     	ld a, b
-0B5F: F600     [31]     	or 0
-0B61: 3E10     [38]     	ld a, 0b00010000
-0B63: 2804     [45|50]  	jr z, zero_offset
-0B65:                   shift_char_hor:
-0B65: CB2F     [ 8]     	sra a
-0B67: 10FC     [16|21]  	djnz shift_char_hor
-0B69:                   zero_offset:
+0B55: 78       [24]     	ld a, b
+0B56: F600     [31]     	or 0
+0B58: 3E10     [38]     	ld a, 0b00010000
+0B5A: 2804     [45|50]  	jr z, zero_offset
+0B5C:                   shift_char_hor:
+0B5C: CB2F     [ 8]     	sra a
+0B5E: 10FC     [16|21]  	djnz shift_char_hor
+0B60:                   zero_offset:
                         
-0B69: 77       [ 7]     	ld (hl), a
+0B60: 77       [ 7]     	ld (hl), a
                         
-0B6A:                   nothing_to_do_here:
-0B6A: CDB70A   [17]     	call write_player_chars_to_cgram
+0B61:                   nothing_to_do_here:
+0B61: CDAE0A   [17]     	call write_player_chars_to_cgram
                         
                         #endlocal
-0B6D: C1       [27]     	pop bc
-0B6E: D1       [37]     	pop de
-0B6F: C9       [47]     	ret
+0B64: C1       [27]     	pop bc
+0B65: D1       [37]     	pop de
+0B66: C9       [47]     	ret
                         
-0B70:                   write_boundaries_chars:
-0B70: D5       [11]     	push de
+0B67:                   write_boundaries_chars:
+0B67: D5       [11]     	push de
                         	; boundaries
                         	; left
-0B71: 1601     [18]     	ld d, DSP_IW
-0B73: 1E60     [25]     	ld e, LEFT_EDGE
-0B75: CD7C00   [42]     	call PIOOut
+0B68: 1601     [18]     	ld d, DSP_IW
+0B6A: 1E60     [25]     	ld e, LEFT_EDGE
+0B6C: CD4F05   [42]     	call PIOOut
                         
-0B78: 21C009   [52]     	ld hl, LEFT_EDGE_CHAR
-0B7B: CDAB0A   [69]     	call write_write_char_to_cgram
+0B6F: 21B709   [52]     	ld hl, LEFT_EDGE_CHAR
+0B72: CDA20A   [69]     	call write_write_char_to_cgram
                         
                         	; right
-0B7E: 1601     [76]     	ld d, DSP_IW
-0B80: 1E68     [83]     	ld e, RIGHT_EDGE
-0B82: CD7C00   [100]    	call PIOOut
+0B75: 1601     [76]     	ld d, DSP_IW
+0B77: 1E68     [83]     	ld e, RIGHT_EDGE
+0B79: CD4F05   [100]    	call PIOOut
                         
-0B85: 21C809   [110]    	ld hl, RIGHT_EDGE_CHAR
-0B88: CDAB0A   [127]    	call write_write_char_to_cgram
+0B7C: 21BF09   [110]    	ld hl, RIGHT_EDGE_CHAR
+0B7F: CDA20A   [127]    	call write_write_char_to_cgram
                         
-0B8B: D1       [137]    	pop de
-0B8C: C9       [147]    	ret
+0B82: D1       [137]    	pop de
+0B83: C9       [147]    	ret
                         
-0B8D:                   scancode_to_keystroke:
-0B8D: E5       [11]     	push hl
-0B8E: D5       [22]     	push de
-0B8F: C5       [33]     	push bc
+0B84:                   scancode_to_keystroke:
+0B84: E5       [11]     	push hl
+0B85: D5       [22]     	push de
+0B86: C5       [33]     	push bc
                         
                         	; test only => copy pure scancode into keystroke
-0B90: 113E08   [43]     	ld de, STATE_KEYSTROKE
-0B93: 214208   [53]     	ld hl, STATE_SCANCODE
-0B96: 0600     [60]     	ld b, 0
-0B98: 0E04     [67]     	ld c, 4
-0B9A: EDB0     [83|21]  	ldir
+0B87: 113E08   [43]     	ld de, STATE_KEYSTROKE
+0B8A: 214208   [53]     	ld hl, STATE_SCANCODE
+0B8D: 0600     [60]     	ld b, 0
+0B8F: 0E04     [67]     	ld c, 4
+0B91: EDB0     [83|21]  	ldir
                         
-0B9C: C1       [93]     	pop bc
-0B9D: D1       [103]    	pop de
-0B9E: E1       [113]    	pop hl
-0B9F: C9       [123]    	ret
+0B93: C1       [93]     	pop bc
+0B94: D1       [103]    	pop de
+0B95: E1       [113]    	pop hl
+0B96: C9       [123]    	ret
+                        
+                        
+0B97:                   cleardisplay_fast:
+                        	; clear display
+0B97: 1601     [ 7]     	ld d, DSP_IW
+0B99: 1E01     [14]     	ld e, 0b00000001
+0B9B: CD4F05   [31]     	call PIOOut
+0B9E: C9       [41]     	ret
+                        
+0B9F:                   SetCaretRaw:
+0B9F: F5       [11]     	push af
+                        
+                        	; b - offset, 64 (0x40) is 2nd line
+                        	; c - offset on the line
+0BA0: 1601     [18]     	ld d, DSP_IW
+0BA2: 3E80     [25]     	ld a, 0x80
+0BA4: 80       [29]     	add b
+0BA5: 81       [33]     	add c
+0BA6: 5F       [37]     	ld e, a
+                        
+0BA7: CD4F05   [54]     	call PIOOut
+                        
+0BAA: F1       [64]     	pop af
+0BAB: C9       [74]     	ret
                         
 
 
@@ -560,84 +590,92 @@
 ; +++ global symbols +++
 
 ApplicationReturn      = $0348 =   840          move_around.z80:4
-CUSTOM_1_CHAR          = $09D0 =  2512  _CODE   move_around.z80:308
-CUSTOM_2_CHAR          = $09E0 =  2528  _CODE   move_around.z80:326
-CUSTOM_3_CHAR          = $09D8 =  2520  _CODE   move_around.z80:317
-CUSTOM_4_CHAR          = $09E8 =  2536  _CODE   move_around.z80:336
+CUSTOM_1_CHAR          = $09C7 =  2503  _CODE   move_around.z80:318
+CUSTOM_2_CHAR          = $09D7 =  2519  _CODE   move_around.z80:336
+CUSTOM_3_CHAR          = $09CF =  2511  _CODE   move_around.z80:327
+CUSTOM_4_CHAR          = $09DF =  2527  _CODE   move_around.z80:346
 ClearDisplay           = $00F7 =   247          move_around.z80:2
-DSP_DW                 = $0005 =     5          move_around.z80:10
-DSP_IW                 = $0001 =     1          move_around.z80:9
-DisableCursor          = $0497 =  1175          move_around.z80:12
-EMPTY_CHAR             = $09B8 =  2488  _CODE   move_around.z80:281
-FIELD_BOTTOM_LEFT      = $0050 =    80  _CODE   move_around.z80:278
-FIELD_BOTTOM_RIGHT     = $0058 =    88  _CODE   move_around.z80:279
-FIELD_TOP_LEFT         = $0040 =    64  _CODE   move_around.z80:276
-FIELD_TOP_RIGHT        = $0048 =    72  _CODE   move_around.z80:277
-LEFT_EDGE              = $0060 =    96  _CODE   move_around.z80:273
-LEFT_EDGE_CHAR         = $09C0 =  2496  _CODE   move_around.z80:290
-OutHex                 = $047B =  1147          move_around.z80:11
-PIOOut                 = $007C =   124          move_around.z80:3
-PLAYAREA               = $09F0 =  2544  _CODE   move_around.z80:346 (unused)
-RIGHT_EDGE             = $0068 =   104  _CODE   move_around.z80:274
-RIGHT_EDGE_CHAR        = $09C8 =  2504  _CODE   move_around.z80:299
-STATE_KEYSTROKE        = $083E =  2110          move_around.z80:15
-STATE_SCANCODE         = $0842 =  2114          move_around.z80:16
-SetCaretRaw            = $011C =   284          move_around.z80:8
-Wait_PS2ScanCode       = $04F8 =  1272          move_around.z80:13
-_CODE                  = $0882 =  2178  _CODE   move_around.z80:20 (unused)
-_CODE_end              = $0F80 =  3968  _CODE   move_around.z80:20 (unused)
-_CODE_size             = $06FE =  1790  _CODE   move_around.z80:20 (unused)
-clear_char             = $0AEE =  2798  _CODE   move_around.z80:407 (unused)
-draw_field             = $097D =  2429  _CODE   move_around.z80:229
-draw_player            = $0908 =  2312  _CODE   move_around.z80:142 (unused)
-draw_player_location   = $0928 =  2344  _CODE   move_around.z80:170
-exit                   = $097A =  2426  _CODE   move_around.z80:224 (unused)
-main                   = $094F =  2383  _CODE   move_around.z80:194
-move                   = $08DB =  2267  _CODE   move_around.z80:106
-movedown               = $0896 =  2198  _CODE   move_around.z80:43
-moveleft               = $089F =  2207  _CODE   move_around.z80:51
-moveright              = $08A8 =  2216  _CODE   move_around.z80:59
-moveup                 = $088D =  2189  _CODE   move_around.z80:35
-output_keycode         = $08BB =  2235  _CODE   move_around.z80:75
-rawout                 = $0887 =  2183  _CODE   move_around.z80:30 (unused)
-reset_2nd_line         = $08B1 =  2225  _CODE   move_around.z80:67 (unused)
-reset_pos              = $08FB =  2299  _CODE   move_around.z80:133
-runloop                = $0963 =  2403  _CODE   move_around.z80:203
-scancode_to_keystroke  = $0B8D =  2957  _CODE   move_around.z80:530
-update_field_chars     = $0AF7 =  2807  _CODE   move_around.z80:414
-write_boundaries_chars = $0B70 =  2928  _CODE   move_around.z80:508
-write_player_chars_to_cgram = $0AB7 =  2743  _CODE   move_around.z80:361
-write_write_char_to_cgram = $0AAB =  2731  _CODE   move_around.z80:349
-xpos                   = $0885 =  2181  _CODE   move_around.z80:27
-ypos                   = $0886 =  2182  _CODE   move_around.z80:28
+DSP_DW                 = $0005 =     5          move_around.z80:14
+DSP_IR                 = $0003 =     3          move_around.z80:12 (unused)
+DSP_IRC                = $0002 =     2          move_around.z80:13 (unused)
+DSP_IW                 = $0001 =     1          move_around.z80:11
+DisableCursor          = $0497 =  1175          move_around.z80:22
+EMPTY_CHAR             = $09AF =  2479  _CODE   move_around.z80:291
+FIELD_BOTTOM_LEFT      = $0050 =    80  _CODE   move_around.z80:288
+FIELD_BOTTOM_RIGHT     = $0058 =    88  _CODE   move_around.z80:289
+FIELD_TOP_LEFT         = $0040 =    64  _CODE   move_around.z80:286
+FIELD_TOP_RIGHT        = $0048 =    72  _CODE   move_around.z80:287
+LEFT_EDGE              = $0060 =    96  _CODE   move_around.z80:283
+LEFT_EDGE_CHAR         = $09B7 =  2487  _CODE   move_around.z80:300
+NumToHex               = $0292 =   658          move_around.z80:21 (unused)
+OutHex                 = $047B =  1147          move_around.z80:20
+PIOOut                 = $054F =  1359          move_around.z80:3
+PLAYAREA               = $09E7 =  2535  _CODE   move_around.z80:356 (unused)
+PORTA                  = $0004 =     4          move_around.z80:15 (unused)
+PORTAC                 = $0006 =     6          move_around.z80:17 (unused)
+PORTB                  = $0005 =     5          move_around.z80:16 (unused)
+PORTBC                 = $0007 =     7          move_around.z80:18 (unused)
+RIGHT_EDGE             = $0068 =   104  _CODE   move_around.z80:284
+RIGHT_EDGE_CHAR        = $09BF =  2495  _CODE   move_around.z80:309
+STATE_KEYSTROKE        = $083E =  2110          move_around.z80:25
+STATE_SCANCODE         = $0842 =  2114          move_around.z80:26
+SetCaretRaw            = $0B9F =  2975  _CODE   move_around.z80:561
+SetCaretRaw_bios       = $011C =   284          move_around.z80:8 (unused)
+Wait                   = $0060 =    96          move_around.z80:27 (unused)
+Wait_PS2ScanCode       = $04F8 =  1272          move_around.z80:23
+_CODE                  = $0882 =  2178  _CODE   move_around.z80:31 (unused)
+_CODE_end              = $0F80 =  3968  _CODE   move_around.z80:31 (unused)
+_CODE_size             = $06FE =  1790  _CODE   move_around.z80:31 (unused)
+clear_char             = $0AE5 =  2789  _CODE   move_around.z80:417 (unused)
+cleardisplay_fast      = $0B97 =  2967  _CODE   move_around.z80:554 (unused)
+draw_field             = $0974 =  2420  _CODE   move_around.z80:239
+draw_player            = $0902 =  2306  _CODE   move_around.z80:149 (unused)
+draw_player_location   = $0922 =  2338  _CODE   move_around.z80:177
+exit                   = $0971 =  2417  _CODE   move_around.z80:234 (unused)
+main                   = $0949 =  2377  _CODE   move_around.z80:201
+move                   = $08D5 =  2261  _CODE   move_around.z80:113
+movedown               = $0890 =  2192  _CODE   move_around.z80:50
+moveleft               = $0899 =  2201  _CODE   move_around.z80:58
+moveright              = $08A2 =  2210  _CODE   move_around.z80:66
+moveup                 = $0887 =  2183  _CODE   move_around.z80:42
+output_keycode         = $08B5 =  2229  _CODE   move_around.z80:82 (unused)
+reset_2nd_line         = $08AB =  2219  _CODE   move_around.z80:74 (unused)
+reset_pos              = $08F5 =  2293  _CODE   move_around.z80:140
+runloop                = $0960 =  2400  _CODE   move_around.z80:213
+scancode_to_keystroke  = $0B84 =  2948  _CODE   move_around.z80:536
+update_field_chars     = $0AEE =  2798  _CODE   move_around.z80:424
+write_boundaries_chars = $0B67 =  2919  _CODE   move_around.z80:514
+write_player_chars_to_cgram = $0AAE =  2734  _CODE   move_around.z80:371
+write_write_char_to_cgram = $0AA2 =  2722  _CODE   move_around.z80:359
+xpos                   = $0885 =  2181  _CODE   move_around.z80:38
+ypos                   = $0886 =  2182  _CODE   move_around.z80:39
 
 ; +++ local symbols +++
 
-done    = $08D7 =  2263  _CODE   move_around.z80:98
-outcode = $08D0 =  2256  _CODE   move_around.z80:92
+done    = $08D1 =  2257  _CODE   move_around.z80:105
+outcode = $08CA =  2250  _CODE   move_around.z80:99
 
 ; +++ local symbols +++
 
 
 ; +++ local symbols +++
 
-moverow = $0911 =  2321  _CODE   move_around.z80:150
+moverow = $090B =  2315  _CODE   move_around.z80:157
 
 ; +++ local symbols +++
 
-nextchar = $0AAF =  2735  _CODE   move_around.z80:353
+nextchar = $0AA6 =  2726  _CODE   move_around.z80:363
 
 ; +++ local symbols +++
 
-col_set               = $0B48 =  2888  _CODE   move_around.z80:464
-next_row              = $0B59 =  2905  _CODE   move_around.z80:481
-no_pad                = $0B59 =  2905  _CODE   move_around.z80:480
-nothing_to_do_here    = $0B6A =  2922  _CODE   move_around.z80:500
-row_offset_calculated = $0B5C =  2908  _CODE   move_around.z80:485
-second_col            = $0B42 =  2882  _CODE   move_around.z80:460
-shift_char_hor        = $0B65 =  2917  _CODE   move_around.z80:493
-zero_offset           = $0B69 =  2921  _CODE   move_around.z80:496
+col_set               = $0B3F =  2879  _CODE   move_around.z80:474
+next_row              = $0B50 =  2896  _CODE   move_around.z80:487
+nothing_to_do_here    = $0B61 =  2913  _CODE   move_around.z80:506
+row_offset_calculated = $0B53 =  2899  _CODE   move_around.z80:491
+second_col            = $0B39 =  2873  _CODE   move_around.z80:470
+shift_char_hor        = $0B5C =  2908  _CODE   move_around.z80:499
+zero_offset           = $0B60 =  2912  _CODE   move_around.z80:502
 
 
-total time: 0.0069 sec.
+total time: 0.0088 sec.
 no errors

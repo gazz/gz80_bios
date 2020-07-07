@@ -1,6 +1,6 @@
                         ; --------------------------------------
                         ; zasm: assemble "bios.z80"
-                        ; date: 2020-06-19 22:50:37
+                        ; date: 2020-07-07 16:21:44
                         ; --------------------------------------
 
 
@@ -18,7 +18,7 @@
 0006:                   DSP_MI	equ 6
 000E:                   DSP_ON	equ 14
 0001:                   DSP_IW	equ 0b00000001
-0003:                   DSP_IR	equ 3
+0003:                   DSP_IR	equ 0b00000011
 0005:                   DSP_DW	equ	0b00000101
 1000:                   SPADDR	equ 0x1000
                         
@@ -26,7 +26,7 @@
 0000:                   #code _BOOT
 0013:                   #code _GSINIT
 0013:                   #code _CODE
-0575:                   #code _END, *, 0x800 - _CODE_end
+05A8:                   #code _END, *, 0x800 - _CODE_end
 0800:                   #data _BIOS_RAM, 0x800, 0x80
 0880:                   #data _WORK_RAM, *, 0x700
 0F80:                   #data _STACK_RAM, *, 0x80
@@ -41,16 +41,16 @@
 000A: 010800   [46]     	ld bc, 8
 000D: EDB0     [62|21]  	ldir
                         
-000F: C34F05   [72]     	jp main
+000F: C38205   [72]     	jp main
 0012: 76       [76]     	halt
                         
                         #code _CODE
                         
                         
-0013: 677A3830          WELCOME .asciz 	"gz80, v0.21        "
-0017: 2C207630          
-001B: 2E323120          
-001F: 20202020          
+0013: 67617A7A          WELCOME .asciz 	"gazz80, v0.21      "
+0017: 38302C20          
+001B: 76302E32          
+001F: 31202020          
 0023: 20202000          
 0027: 203E2020          SHELL .asciz 	" >                 "
 002B: 20202020          
@@ -139,7 +139,7 @@
 007B: C9       [45]     	ret
                         
                         
-007C:                   pioout:
+007C:                   pioout_slow:
                         	; output to pio
 007C: 7A       [ 4]     	ld a, d
 007D: D305     [15]     	out PORTB, a
@@ -174,7 +174,7 @@
                         
                         	; display out
 00A3: 1605     [103]    	ld d, DSP_DW
-00A5: CD7C00   [120]    	call pioout
+00A5: CD4F05   [120]    	call pioout
                         	; serial out
                         
 00A8: CD8A00   [137]    	call sioout
@@ -222,7 +222,7 @@
 00D5: C8       [16|22]  	ret z
                         
 00D6: 5E       [23]     	ld e, (hl)
-00D7: CD7C00   [40]     	call pioout
+00D7: CD4F05   [40]     	call pioout
 00DA: 23       [46]     	inc hl
 00DB: C3D300   [56]     	jp nextchar
                         #endlocal
@@ -244,7 +244,7 @@
                         	; clear display
 00F7: 1601     [ 7]     	ld d, DSP_IW
 00F9: 1E01     [14]     	ld e, 0b00000001
-00FB: CD7C00   [31]     	call pioout
+00FB: CD4F05   [31]     	call pioout
 00FE: CD6000   [48]     	call wait
 0101: CD6000   [65]     	call wait
 0104: C9       [75]     	ret
@@ -253,7 +253,7 @@
 0105: E5       [11]     	push hl
 0106: 1601     [18]     	ld d, DSP_IW
 0108: 1E80     [25]     	ld e, 0b10000000
-010A: CD7C00   [42]     	call pioout
+010A: CD4F05   [42]     	call pioout
 010D: 212808   [52]     	ld hl, CARRET_POS
 0110: 3600     [62]     	ld (hl), 0	
 0112: E1       [72]     	pop hl
@@ -262,7 +262,7 @@
 0114:                   set_carret_2nd_line:
 0114: 1601     [ 7]     	ld d, DSP_IW
 0116: 1EC0     [14]     	ld e, 0b11000000
-0118: CD7C00   [31]     	call pioout
+0118: CD4F05   [31]     	call pioout
 011B: C9       [41]     	ret	
                         
 011C:                   set_carret_raw:
@@ -274,7 +274,7 @@
 0121: 80       [29]     	add b
 0122: 81       [33]     	add c
 0123: 5F       [37]     	ld e, a
-0124: CD7C00   [54]     	call pioout
+0124: CD4F05   [54]     	call pioout
 0127: F1       [64]     	pop af
 0128: C9       [74]     	ret
                         
@@ -296,12 +296,12 @@
 0145: C630     [142]    	add 48
 0147: 1605     [149]    	ld d, DSP_DW
 0149: 5F       [153]    	ld e, a
-014A: CD7C00   [170]    	call pioout
+014A: CD4F05   [170]    	call pioout
                         
                         	; position carret
 014D: 1601     [177]    	ld d, DSP_IW
 014F: 1EC2     [184]    	ld e, 0b11000010
-0151: CD7C00   [201]    	call pioout
+0151: CD4F05   [201]    	call pioout
                         
 0154: 212808   [211]    	ld hl, CARRET_POS
 0157: 3602     [221]    	ld (hl), 2
@@ -338,21 +338,21 @@
                         	; function set
 0182: 1601     [ 7]     	ld d, DSP_IW
 0184: 1E38     [14]     	ld e, 0b00111000
-0186: CD7C00   [31]     	call pioout
+0186: CD4F05   [31]     	call pioout
 0189: CD6000   [48]     	call wait
 018C: CD6000   [65]     	call wait
                         
                         	; display on 
 018F: 1601     [72]     	ld d, DSP_IW
 0191: 1E0F     [79]     	ld e, 0b00001111
-0193: CD7C00   [96]     	call pioout
+0193: CD4F05   [96]     	call pioout
 0196: CD6000   [113]    	call wait
 0199: CD6000   [130]    	call wait
                         
                         	; increment mode
 019C: 1601     [137]    	ld d, DSP_IW
 019E: 1E06     [144]    	ld e, 0b00000110
-01A0: CD7C00   [161]    	call pioout
+01A0: CD4F05   [161]    	call pioout
 01A3: CD6000   [178]    	call wait
 01A6: CD6000   [195]    	call wait
                         
@@ -543,7 +543,7 @@
 0281: 7E       [98]     	ld a, (hl)
 0282: C630     [105]    	add 48
 0284: 5F       [109]    	ld e, a
-0285: CD7C00   [126]    	call pioout
+0285: CD4F05   [126]    	call pioout
                         
 0288: 0640     [133]    	ld b, 64
 028A: 212808   [143]    	ld hl, CARRET_POS
@@ -603,10 +603,10 @@
                         	; ld e, (hl)
                         	; b register contains lsb
 02C1: 58       [127]    	ld e, b
-02C2: CD7C00   [144]    	call pioout
+02C2: CD4F05   [144]    	call pioout
                         	; c register contains msb
 02C5: 59       [148]    	ld e, c
-02C6: CD7C00   [165]    	call pioout
+02C6: CD4F05   [165]    	call pioout
                         
 02C9: 0640     [172]    	ld b, 64
 02CB: 212808   [182]    	ld hl, CARRET_POS
@@ -662,10 +662,10 @@
 02F7: 1605     [39]     	ld d, DSP_DW		
                         	; b register contains lsb
 02F9: 58       [43]     	ld e, b
-02FA: CD7C00   [60]     	call pioout
+02FA: CD4F05   [60]     	call pioout
                         	; c register contains msb
 02FD: 59       [64]     	ld e, c
-02FE: CD7C00   [81]     	call pioout
+02FE: CD4F05   [81]     	call pioout
                         
                         	; reset carret back to the next row
 0301: 0640     [88]     	ld b, 64
@@ -880,11 +880,11 @@
 0488: CA8F04   [86|86]  	jp z, singlechar
                         
 048B: 58       [90]     	ld e, b
-048C: CD7C00   [107]    	call pioout
+048C: CD4F05   [107]    	call pioout
                         
 048F:                   singlechar:
 048F: 59       [ 4]     	ld e, c
-0490: CD7C00   [21]     	call pioout
+0490: CD4F05   [21]     	call pioout
                         #endlocal
                         
 0493: F1       [31]     	pop af
@@ -898,7 +898,7 @@
                         	; hide cursor
 0497: 1601     [ 7]     	ld d, DSP_IW
 0499: 1E0C     [14]     	ld e, 0b00001100
-049B: CD7C00   [31]     	call pioout
+049B: CD4F05   [31]     	call pioout
 049E: C9       [41]     	ret
                         
                         ; move to BIOS
@@ -1070,29 +1070,84 @@
 054D: E1       [47]     	pop hl
 054E: C9       [57]     	ret
                         
+054F:                   pioout:
+0002:                   DSP_IRC	equ 0b00000010
+                        	; ensure device is not busy
+                        	; switch PIO to read mode
                         
-054F:                   main:
-054F: CD4D00   [17]     	call initpio
-0552: CD8201   [34]     	call initdisplay
-0555: CDEA04   [51]     	call init_ps2_keyboard
-0558: CD5400   [68]     	call initserial
+054F: 3E00     [ 7]     	ld a, 0
+0551: D304     [18]     	out PORTA, a
                         
-055B: 213E08   [78]     	ld hl, keystroke
-055E: 3600     [88]     	ld (hl), 0
-0560: 214208   [98]     	ld hl, scancode
-0563: 3600     [108]    	ld (hl), 0
+                        	; load flag read
+0553: 3E03     [25]     	ld a, DSP_IR
+0555: D305     [36]     	out PORTB, a
                         
-0565: CDCC01   [125]    	call reset
+0557: 3E4F     [43]     	ld a, 0b01001111
+0559: D306     [54]     	out PORTAC, a
                         
-0568:                   runloop:
-0568: CD7104   [17]     	call waitserial
-056B: CD8E00   [34]     	call charout
+                        #local
+055B: C5       [65]     	push bc
                         
-056E: CDB203   [51]     	call commandeval
+                        	; max wait time
+055C: 06FF     [72]     	ld b, 255
                         
-0571: C36805   [61]     	jp runloop
+055E:                   wait_busy:
+055E: 3E02     [ 7]     	ld a, DSP_IRC
+0560: D305     [18]     	out PORTB, a
                         
-0574: 76       [65]     	halt
+0562: 3E03     [25]     	ld a, DSP_IR
+0564: D305     [36]     	out PORTB, a
+                        
+0566: DB04     [47]     	in a, PORTA
+0568: E680     [54]     	and a, 0b10000000
+                        
+056A: 2802     [61|66]  	jr z, busy_clear
+                        
+056C: 10F0     [69|74]  	djnz wait_busy 
+                        
+056E:                   busy_clear:
+056E: 3E02     [ 7]     	ld a, DSP_IRC
+0570: D305     [18]     	out PORTB, a
+                        
+                        #endlocal
+0572: C1       [28]     	pop bc
+                        
+0573: 3E0F     [35]     	ld a, 0b00001111
+0575: D306     [46]     	out PORTAC, a
+                        
+                        	; output to pio & wait until busy flag clears
+0577: 7A       [50]     	ld a, d
+0578: D305     [61]     	out PORTB, a
+057A: 7B       [65]     	ld a, e
+057B: D304     [76]     	out PORTA, a
+057D: 3E00     [83]     	ld a, 0
+057F: D305     [94]     	out PORTB, a
+                        
+0581: C9       [104]    	ret
+                        
+                        
+0582:                   main:
+0582: CD4D00   [17]     	call initpio
+0585: CD8201   [34]     	call initdisplay
+0588: CDEA04   [51]     	call init_ps2_keyboard
+058B: CD5400   [68]     	call initserial
+                        
+058E: 213E08   [78]     	ld hl, keystroke
+0591: 3600     [88]     	ld (hl), 0
+0593: 214208   [98]     	ld hl, scancode
+0596: 3600     [108]    	ld (hl), 0
+                        
+0598: CDCC01   [125]    	call reset
+                        
+059B:                   runloop:
+059B: CD7104   [17]     	call waitserial
+059E: CD8E00   [34]     	call charout
+                        
+05A1: CDB203   [51]     	call commandeval
+                        
+05A4: C39B05   [61]     	jp runloop
+                        
+05A7: 76       [65]     	halt
                         
                         
                         
@@ -1102,8 +1157,8 @@
 
 #CODE _BOOT       = $0000 =     0,  size = $0013 =    19
 #CODE _GSINIT     = $0013 =    19,  size = $0000 =     0
-#CODE _CODE       = $0013 =    19,  size = $0562 =  1378
-#CODE _END        = $0575 =  1397,  size = $028B =   651
+#CODE _CODE       = $0013 =    19,  size = $0595 =  1429
+#CODE _END        = $05A8 =  1448,  size = $0258 =   600
 #DATA _BIOS_RAM   = $0800 =  2048,  size = $0080 =   128
 #DATA _WORK_RAM   = $0880 =  2176,  size = $0700 =  1792
 #DATA _STACK_RAM  = $0F80 =  3968,  size = $0080 =   128
@@ -1117,7 +1172,8 @@ CmpStrings          = $01AD =   429  _CODE      bios.z80:348
 DISP_LINE           = $0829 =  2089  _BIOS_RAM  bios.z80:61
 DSP_CLR             = $0001 =     1             bios.z80:10 (unused)
 DSP_DW              = $0005 =     5             bios.z80:16
-DSP_IR              = $0003 =     3             bios.z80:15 (unused)
+DSP_IR              = $0003 =     3             bios.z80:15
+DSP_IRC             = $0002 =     2  _CODE      bios.z80:1036
 DSP_IW              = $0001 =     1             bios.z80:14
 DSP_MI              = $0006 =     6             bios.z80:12 (unused)
 DSP_ON              = $000E =    14             bios.z80:13 (unused)
@@ -1168,11 +1224,11 @@ _BOOT               = $0000 =     0  _BOOT      bios.z80:19 (unused)
 _BOOT_end           = $0013 =    19  _BOOT      bios.z80:19 (unused)
 _BOOT_size          = $0013 =    19  _BOOT      bios.z80:19 (unused)
 _CODE               = $0013 =    19  _CODE      bios.z80:21 (unused)
-_CODE_end           = $0575 =  1397  _CODE      bios.z80:21
-_CODE_size          = $0562 =  1378  _CODE      bios.z80:21 (unused)
-_END                = $0575 =  1397  _END       bios.z80:22 (unused)
+_CODE_end           = $05A8 =  1448  _CODE      bios.z80:21
+_CODE_size          = $0595 =  1429  _CODE      bios.z80:21 (unused)
+_END                = $05A8 =  1448  _END       bios.z80:22 (unused)
 _END_end            = $0800 =  2048  _END       bios.z80:22 (unused)
-_END_size           = $028B =   651  _END       bios.z80:22 (unused)
+_END_size           = $0258 =   600  _END       bios.z80:22 (unused)
 _GSINIT             = $0013 =    19  _GSINIT    bios.z80:20 (unused)
 _GSINIT_end         = $0013 =    19  _GSINIT    bios.z80:20 (unused)
 _GSINIT_size        = $0000 =     0  _GSINIT    bios.z80:20 (unused)
@@ -1200,19 +1256,20 @@ keystroke           = $083E =  2110  _BIOS_RAM  bios.z80:868
 line_feed           = $015B =   347  _CODE      bios.z80:293
 load                = $01F3 =   499  _CODE      bios.z80:396
 longwait            = $0072 =   114  _CODE      bios.z80:111
-main                = $054F =  1359  _CODE      bios.z80:1036
+main                = $0582 =  1410  _CODE      bios.z80:1091
 mstringout          = $00C4 =   196  _CODE      bios.z80:185
 newline_char        = $00BE =   190  _CODE      bios.z80:180
 outbytes            = $0262 =   610  _CODE      bios.z80:494
 peek                = $02A9 =   681  _CODE      bios.z80:557
 peek0               = $026F =   623  _CODE      bios.z80:506
 peek_pos            = $02D3 =   723  _CODE      bios.z80:597
-pioout              = $007C =   124  _CODE      bios.z80:123
+pioout              = $054F =  1359  _CODE      bios.z80:1035
+pioout_slow         = $007C =   124  _CODE      bios.z80:123 (unused)
 raw_textout         = $00D1 =   209  _CODE      bios.z80:197
 reset               = $01CC =   460  _CODE      bios.z80:383
 return_shell        = $0129 =   297  _CODE      bios.z80:262
 run_app             = $0336 =   822  _CODE      bios.z80:679
-runloop             = $0568 =  1384  _CODE      bios.z80:1049
+runloop             = $059B =  1435  _CODE      bios.z80:1104
 scancode            = $0842 =  2114  _BIOS_RAM  bios.z80:954
 set_carret_2nd_line = $0114 =   276  _CODE      bios.z80:243
 set_carret_home     = $0105 =   261  _CODE      bios.z80:233
@@ -1277,6 +1334,11 @@ done            = $0547 =  1351  _CODE      bios.z80:1026
 poll            = $051B =  1307  _CODE      bios.z80:982
 sink_break_code = $050F =  1295  _CODE      bios.z80:973
 
+; +++ local symbols +++
 
-total time: 0.0135 sec.
+busy_clear = $056E =  1390  _CODE      bios.z80:1070
+wait_busy  = $055E =  1374  _CODE      bios.z80:1056
+
+
+total time: 0.0137 sec.
 no errors

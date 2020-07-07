@@ -1,19 +1,30 @@
 
 ClearDisplay equ 0xf7
-PIOOut equ 0x7c
+PIOOut equ 0x054F
 ApplicationReturn equ 0x348
 ; set caret anywhere on the screen
 ; b - offset, 64 (0x40) is 2nd line
 ; c - offset on the line
-SetCaretRaw equ 0x11C
-DSP_IW	equ	0x1
+SetCaretRaw_bios equ 0x11C
+
+; PIO direct access
+DSP_IW	equ	0b00000001
+DSP_IR	equ 0b00000011
+DSP_IRC	equ 0b00000010
 DSP_DW	equ	0x5
+PORTA 	equ 0x4
+PORTB 	equ 0x5
+PORTAC 	equ 0x6
+PORTBC 	equ 0x7
+
 OutHex equ $047B
+NumToHex equ $0292
 DisableCursor equ $0497
 Wait_PS2ScanCode equ $04F8
 ; there are RAM mapped
 STATE_KEYSTROKE equ $083E
 STATE_SCANCODE equ $0842
+Wait equ 0x60
 
 
 
@@ -27,10 +38,6 @@ STATE_SCANCODE equ $0842
 xpos defb 0
 ypos defb 0
 
-rawout:
-	ld d, DSP_DW
-	call PIOOut
-	ret
 
 moveup:
 	ld hl, ypos
@@ -200,15 +207,18 @@ main:
 	call write_player_chars_to_cgram
 	call write_boundaries_chars
 
-runloop:
-
-	;call ClearDisplay
-
-	call output_keycode
-
 	; render
 	call draw_field
+
+runloop:
+
+	;call cleardisplay_fast
+	;call ClearDisplay
+
+	;	call output_keycode
+
 	call draw_player_location
+
 	; call draw_player
 
 	; wait for input
@@ -472,12 +482,8 @@ col_set:
 	ld b, a
 	cp 8
 	jr z, row_offset_calculated
-	jr c, no_pad
+	jr c, next_row
 	dec b
-;	jr nc, no_pad
-	; we need to remove one vert offset line to adjust for invisible row
-;	dec b
-no_pad:
 next_row:
 	inc hl
 	djnz next_row
@@ -542,5 +548,29 @@ scancode_to_keystroke:
 	pop bc
 	pop de
 	pop hl
+	ret
+
+
+cleardisplay_fast:
+	; clear display
+	ld d, DSP_IW
+	ld e, 0b00000001
+	call PIOOut
+	ret
+
+SetCaretRaw:
+	push af
+
+	; b - offset, 64 (0x40) is 2nd line
+	; c - offset on the line
+	ld d, DSP_IW
+	ld a, 0x80
+	add b
+	add c
+	ld e, a
+
+	call PIOOut
+
+	pop af
 	ret
 

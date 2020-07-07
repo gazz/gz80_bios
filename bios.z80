@@ -12,7 +12,7 @@ DSP_RH	equ 2
 DSP_MI	equ 6
 DSP_ON	equ 14
 DSP_IW	equ 0b00000001
-DSP_IR	equ 3
+DSP_IR	equ 0b00000011
 DSP_DW	equ	0b00000101
 SPADDR	equ 0x1000
 
@@ -120,7 +120,7 @@ lloop:
 	ret
 
 
-pioout:
+pioout_slow:
 	; output to pio
 	ld a, d
 	out PORTB, a
@@ -1030,6 +1030,61 @@ done:
 	pop de
 	pop bc
 	pop hl
+	ret
+
+pioout:
+DSP_IRC	equ 0b00000010
+	; ensure device is not busy
+	; switch PIO to read mode
+
+	ld a, 0
+	out PORTA, a
+
+	; load flag read
+	ld a, DSP_IR
+	out PORTB, a
+
+	ld a, 0b01001111
+	out PORTAC, a
+
+#local
+	push bc
+
+	; max wait time
+	ld b, 255
+
+wait_busy:
+	ld a, DSP_IRC
+	out PORTB, a
+
+	ld a, DSP_IR
+	out PORTB, a
+
+	in a, PORTA
+	and a, 0b10000000
+
+	jr z, busy_clear
+
+	djnz wait_busy 
+
+busy_clear:
+	ld a, DSP_IRC
+	out PORTB, a
+
+#endlocal
+	pop bc
+
+	ld a, 0b00001111
+	out PORTAC, a
+
+	; output to pio & wait until busy flag clears
+	ld a, d
+	out PORTB, a
+	ld a, e
+	out PORTA, a
+	ld a, 0
+	out PORTB, a
+
 	ret
 
 

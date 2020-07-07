@@ -1,0 +1,19 @@
+void LcdBusy(BYTE reg, BYTE data)
+{
+   BYTE res;
+
+   while (1)
+   {
+      LCD_RS = LCD_RS_CNTL;
+      LCD_RW = LCD_RW_READ;
+      LCD_PORT_DIR = LCD_PORT_IN;
+      LCD_E = 1;
+      nop();
+      res = LCD_DATA;
+      LCD_E = 0;
+      if ((res & 0x80) == 0)
+         break;
+   }
+
+   LcdWrite(reg, data);
+}
