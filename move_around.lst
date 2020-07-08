@@ -1,6 +1,6 @@
                         ; --------------------------------------
                         ; zasm: assemble "move_around.z80"
-                        ; date: 2020-07-07 17:33:12
+                        ; date: 2020-07-07 20:48:11
                         ; --------------------------------------
 
 
@@ -72,7 +72,7 @@
 08A2:                   moveright:
 08A2: 218508   [10]     	ld hl, xpos
 08A5: 7E       [17]     	ld a, (hl)
-08A6: D609     [24]     	sub 9
+08A6: D60A     [24]     	sub 10
 08A8: C8       [29|35]  	ret z
 08A9: 34       [40]     	inc (hl)
 08AA: C9       [50]     	ret
@@ -476,7 +476,7 @@
 0B37: 1806     [319]    	jr col_set
 0B39:                   second_col:	
 0B39: 21D709   [10]     	ld hl, CUSTOM_2_CHAR
-0B3C: D605     [17]     	sub a, 5
+0B3C: D606     [17]     	sub a, 6
 0B3E: 47       [21]     	ld b, a
 0B3F:                   col_set:
                         	
@@ -677,5 +677,5 @@ shift_char_hor        = $0B5C =  2908  _CODE   move_around.z80:499
 zero_offset           = $0B60 =  2912  _CODE   move_around.z80:502
 
 
-total time: 0.0088 sec.
+total time: 0.0084 sec.
 no errors
