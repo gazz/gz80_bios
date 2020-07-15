@@ -1,0 +1,11 @@
+#!/bin/bash
+if [[ $# -ne 1 ]]; then
+    echo "Usage: z80_build_and_upload <file.asm>"
+    exit 2
+fi
+
+input_file=$1
+built_bin=${input_file%.*}.bin
+zasm -uwy $1 || { echo 'assembly failed' ; exit 1; }
+xxd $built_bin
+python /darbi/pyWorkspace/z80_upload_ram/flash.py /dev/cu.usbserial-AG0JNMSW $built_bin --baud 76800
