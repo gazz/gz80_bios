@@ -1,6 +1,6 @@
                         ; --------------------------------------
                         ; zasm: assemble "move_around.z80"
-                        ; date: 2020-07-07 20:48:11
+                        ; date: 2020-07-14 23:44:18
                         ; --------------------------------------
 
 
@@ -221,7 +221,7 @@
                         	;call cleardisplay_fast
                         	;call ClearDisplay
                         
-                        	;	call output_keycode
+                        	; call output_keycode
                         
 0960: CD2209   [17]     	call draw_player_location
                         
@@ -323,11 +323,11 @@
                         
 09C7: 00                CUSTOM_1_CHAR 	defb	0b00000000
 09C8: 00                				defb	0b00000000
-09C9: 02                				defb	0b00000010
-09CA: 02                				defb	0b00000010
-09CB: 02                				defb	0b00000010
-09CC: 02                				defb	0b00000010
-09CD: 02                				defb	0b00000010
+09C9: 04                				defb	0b00000100
+09CA: 0C                				defb	0b00001100
+09CB: 04                				defb	0b00000100
+09CC: 04                				defb	0b00000100
+09CD: 0E                				defb	0b00001110
 09CE: 00                				defb	0b00000000
                         
 09CF: 00                CUSTOM_3_CHAR 	defb	0b00000000
@@ -677,5 +677,5 @@ shift_char_hor        = $0B5C =  2908  _CODE   move_around.z80:499
 zero_offset           = $0B60 =  2912  _CODE   move_around.z80:502
 
 
-total time: 0.0084 sec.
+total time: 0.0068 sec.
 no errors

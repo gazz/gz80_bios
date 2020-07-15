@@ -215,7 +215,7 @@ runloop:
 	;call cleardisplay_fast
 	;call ClearDisplay
 
-	;	call output_keycode
+	; call output_keycode
 
 	call draw_player_location
 
@@ -317,11 +317,11 @@ RIGHT_EDGE_CHAR 	defb	0b00010000
 
 CUSTOM_1_CHAR 	defb	0b00000000
 				defb	0b00000000
-				defb	0b00000010
-				defb	0b00000010
-				defb	0b00000010
-				defb	0b00000010
-				defb	0b00000010
+				defb	0b00000100
+				defb	0b00001100
+				defb	0b00000100
+				defb	0b00000100
+				defb	0b00001110
 				defb	0b00000000
 
 CUSTOM_3_CHAR 	defb	0b00000000
