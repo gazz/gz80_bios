@@ -17,19 +17,19 @@ PORTB 	equ 0x5
 PORTAC 	equ 0x6
 PORTBC 	equ 0x7
 
-OutHex equ $04EE
+OutHex equ $047B
 NumToHex equ $0292
-DisableCursor equ $050A
-Wait_PS2ScanCode equ $056B
+DisableCursor equ $0497
+Wait_PS2ScanCode equ $04F8
 ; there are RAM mapped
-STATE_KEYSTROKE equ $203E
-STATE_SCANCODE equ $2042
+STATE_KEYSTROKE equ $083E
+STATE_SCANCODE equ $0842
 Wait equ 0x60
 
 
 
 #target bin
-#code _CODE, 0x882, 0x6fe	; 0x882 is the allocated memory for application of size 0x6fe (2 bytes reserved for app size)
+#code _CODE, 0x2082, 0x6fe	; 0x882 is the allocated memory for application of size 0x6fe (2 bytes reserved for app size)
 #code _CODE
 
 ; app entry point

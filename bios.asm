@@ -14,15 +14,23 @@ DSP_ON	equ 14
 DSP_IW	equ 0b00000001
 DSP_IR	equ 0b00000011
 DSP_DW	equ	0b00000101
-SPADDR	equ 0x1000
+SPADDR	equ 0x4000
+
+
+CLK_CH0 equ 0x10
+CLK_CH1 equ 0x11
+CLK_CH2 equ 0x12
+CLK_CH3 equ 0x13
+
 
 #target ROM
 #code _BOOT
 #code _GSINIT
-#code _CODE
-#code _END, *, 0x800 - _CODE_end
-#data _BIOS_RAM, 0x800, 0x80
-#data _WORK_RAM, *, 0x700
+#code _INTERRUPT
+#code _BIOS_CODE
+#code _END, *, 0x800 - _BIOS_CODE_end
+#data _BIOS_RAM, 0x2000, 0x80
+#data _WORK_RAM, *, 0x2048
 #data _STACK_RAM, *, 0x80
 
 #code _BOOT
@@ -30,21 +38,29 @@ SPADDR	equ 0x1000
 	ld hl, SPADDR
 	ld sp, hl
 
-	ld hl, TMP_APP_INIT
-	ld de, APP_LOC
-	ld bc, 8
-	ldir
-
 	jp main
 	halt
 
-#code _CODE
+	org 0x10
+	defw int_ctc_ch0
+	defw int_ctc_ch1
+	defw int_ctc_ch2
+	defw int_ctc_ch3
+	halt
 
+#code _INTERRUPT
+	org 0x038
+	di
 
-WELCOME .asciz 	"gazz80, v0.21      "
-SHELL .asciz 	" >                 "
+	call interrupt_handler
 
-TMP_APP_INIT defb 0xdf, 0xfd, 5, 0xab, 0xc8, 0x00, 0x00, 0x00
+	ei
+	reti
+
+	; resume code
+#code _BIOS_CODE
+	org 0x43
+
 
 SERIAL_INIT
 	defb 0, 0b00011000	; WR0, channel reset
@@ -62,9 +78,9 @@ DISP_LINE defs 1
 TMP_STR defs 20
 
 #data _WORK_RAM
-APP_LOC defs 0x700
+APP_LOC defs 0x2048
 
-#code _CODE
+#code _BIOS_CODE
 
 initpio:
 	; set ouput mode on PIO 
@@ -136,29 +152,32 @@ sioout:
 	out SERA, a
 	ret
 
+
 charout:
 	push af
 	push bc
 	push hl
+	push de
+
+	; serial out
+	ld d, DSP_DW
+	call sioout
+
 	; check if new line, then do line feed instead
 	ld a, e
 	sub 13
-	jp z, skip
+	jr z, skip
 
 	ld a, e
 	sub 8
-	jp z, backspace
+	jr z, backspace
 
 	ld a, e
 	sub 10
-	jp z, newline_char
+	jr z, newline_char
 
 	; display out
-	ld d, DSP_DW
 	call pioout
-	; serial out
-
-	call sioout
 
 	ld hl, CARRET_POS
 	ld b, 0
@@ -172,6 +191,7 @@ charout:
 
 skip:
 backspace:
+	pop de
 	pop hl
 	pop bc
 	pop af
@@ -179,8 +199,10 @@ backspace:
 
 newline_char:
 	call line_feed
-	jp skip
+	jr skip
 
+
+;; output string
 
 mstringout:
 	ld d, DSP_DW
@@ -247,9 +269,16 @@ set_carret_2nd_line:
 	ret	
 
 set_carret_raw:
-	push af
 	; b - offset, 64 (0x40) is 2nd line
 	; c - offset on the line
+	push af
+
+	; update memory carret position
+	push hl
+	ld hl, CARRET_POS
+	ld (hl), bc
+	pop hl
+
 	ld d, DSP_IW
 	ld a, 0x80
 	add b
@@ -521,6 +550,7 @@ peek0:
 	add 48
 	ld e, a
 	call pioout
+	call sioout
 
 	ld b, 64
 	ld hl, CARRET_POS
@@ -533,7 +563,7 @@ peek0:
 ; 0..9 = 48..57
 ; a..f = 97..102
 
-NumToHex
+NumToHex:
 	ld c, a   ; a = number to convert
 	call Num1
 	ld d, a
@@ -542,12 +572,12 @@ NumToHex
 	ld e, a
 	ret  ; return with hex number in de
 
-Num1
+Num1:
 	rra
     rra
     rra
     rra
-Num2
+Num2:
 	or $F0
     daa
     add a, $A0
@@ -560,9 +590,44 @@ peek:
 	ld b, 0
 	ld c, 10
 	call set_carret_raw
-	ld hl, APP_LOC
 	pop af
 
+	; evaluationg peek
+	push af
+	push bc
+	call NumToHex
+	ld b, a 
+
+	ld d, DSP_DW
+
+	ld e, '='
+	call sioout
+	ld e, '>'
+	call sioout
+	ld e, ' '
+	call sioout
+	ld e, 'p'
+	call sioout
+	ld e, 'e'
+	call sioout
+	ld e, 'e'
+	call sioout
+	ld e, 'k'
+	call sioout
+	ld e, '['
+	call sioout
+	ld e, b
+	call sioout
+	ld e, ']'
+	call sioout
+	ld e, ':'
+	call sioout
+	ld e, ' '
+	call sioout
+	pop bc
+	pop af
+
+	ld hl, APP_LOC
 	; calculate address for peek byte
 	ld c, a
 	ld b, 0
@@ -581,14 +646,20 @@ peek:
 	; b register contains lsb
 	ld e, b
 	call pioout
+	call sioout
+
 	; c register contains msb
 	ld e, c
 	call pioout
+	call sioout
 
 	ld b, 64
 	ld hl, CARRET_POS
 	ld c, (hl)
 	call set_carret_raw
+
+	ld e, 10
+	call sioout
 
 #endlocal
 	ret	
@@ -653,7 +724,7 @@ no_offset:
 #endlocal
 	ret
 
-HexToNum
+HexToNum:
    ld   a,d
    call Hex1
    add  a,a
@@ -663,10 +734,11 @@ HexToNum
    ld   d,a
    ld   a,e
    call Hex1
+   and 	0xf
    or   d
    ret
 
-Hex1
+Hex1:
    sub  '0'
    cp   10
    ret  c
@@ -712,16 +784,22 @@ copy_screen_to_temp:
 RESET_CMD .ascii 5, "reset", 0x0
 LOAD_CMD .ascii 4, "load", 0x0
 RUN_CMD .ascii 3, "run", 0x0
-PEEK0_CMD .ascii 5, "peek0", 0x0
-PEEK1_CMD .ascii 5, "peek1", 0x0
-PEEK2_CMD .ascii 5, "peek2", 0x0
-PEEK3_CMD .ascii 5, "peek3", 0x0
-PEEK4_CMD .ascii 5, "peek4", 0x0
-PEEK5_CMD .ascii 5, "peek5", 0x0
-PEEK6_CMD .ascii 5, "peek6", 0x0
-PEEK7_CMD .ascii 5, "peek7", 0x0
 PEEK_CMD .ascii 5, "peek ", 0x0
+MONITOR_CMD .ascii 7, "monitor", 0x0
 commandeval:
+
+#local
+	push af
+	ld a, e
+	sub 10
+	jr z, eval
+	pop af
+	ret
+
+eval:
+	pop af
+#endlocal
+
 	ld bc, 10
 	call copy_screen_to_temp
 
@@ -747,70 +825,19 @@ commandeval:
 	call z, run_app
 
 	; peek ram for app addresses
-	ld hl, TMP_STR
-	ld (hl), 5
-	ld de, PEEK0_CMD
-	call CmpStrings
-	ld a, 0
-	call z, peek0
 
-	ld hl, TMP_STR
-	ld (hl), 5
-	ld de, PEEK1_CMD
-	call CmpStrings
-	ld a, 1
-	call z, peek
-
-	ld hl, TMP_STR
-	ld (hl), 5
-	ld de, PEEK2_CMD
-	call CmpStrings
-	ld a, 2
-	call z, peek
-
-	ld hl, TMP_STR
-	ld (hl), 5
-	ld de, PEEK3_CMD
-	call CmpStrings
-	ld a, 3
-	call z, peek
-
-	ld hl, TMP_STR
-	ld (hl), 5
-	ld de, PEEK4_CMD
-	call CmpStrings
-	ld a, 4
-	call z, peek
-
-
-	ld hl, TMP_STR
-	ld (hl), 5
-	ld de, PEEK5_CMD
-	call CmpStrings
-	ld a, 5
-	call z, peek
-
-
-	ld hl, TMP_STR
-	ld (hl), 5
-	ld de, PEEK6_CMD
-	call CmpStrings
-	ld a, 6
-	call z, peek
-
-
-	ld hl, TMP_STR
-	ld (hl), 5
-	ld de, PEEK7_CMD
-	call CmpStrings
-	ld a, 7
-	call z, peek
 
 	ld hl, TMP_STR
 	ld (hl), 5
 	ld de, PEEK_CMD
 	call CmpStrings
 	call z, peek_pos
+
+	ld hl, TMP_STR
+	ld (hl), 7
+	ld de, MONITOR_CMD
+	call CmpStrings
+	call z, monitor
 
 	ret
 
@@ -866,7 +893,7 @@ disablecursor:
 ; move to BIOS
 #data _BIOS_RAM
 keystroke defs 4, 00h
-#code _CODE
+#code _BIOS_CODE
 wait_keystroke:
 	push hl
 	push bc
@@ -952,7 +979,7 @@ init_ps2_keyboard:
 ; waits on a scancode via serial port B that is wired up to PS/2 keyboard
 #data _BIOS_RAM
 scancode defs 4, 00h
-#code _CODE
+#code _BIOS_CODE
 wait_ps2_scancode:
 	push hl
 	push bc
@@ -1087,12 +1114,31 @@ busy_clear:
 
 	ret
 
+WELCOME .asciz 	"gazz80, v0.34      "
+SHELL .asciz 	" >                 "
+INT_YO .asciz 	"Interrupt!!!"
+
+
+interrupt_handler:
+	
+	call cleardisplay
+
+	ld b, 0
+	ld c, 0
+	call set_carret_raw
+
+	ld hl, INT_YO
+	call raw_textout
+
+	ret
 
 main:
 	call initpio
 	call initdisplay
 	call init_ps2_keyboard
 	call initserial
+	call init_clock
+	call init_interrupts
 
 	ld hl, keystroke
 	ld (hl), 0
@@ -1111,5 +1157,455 @@ runloop:
 
 	halt
 
+
+; output 8 bytes at any address to serial
+set_def_mon_address:
+	push hl
+	ld hl, MONITOR_ADDR
+	ld (hl), 0xff
+	inc hl
+	ld (hl), 0xff
+	inc hl
+	ld (hl), 0xff
+	inc hl
+	ld (hl), 0xff
+	pop hl
+	ret
+
+monitor:
+#data _BIOS_RAM
+MONITOR_ADDR defs 4, 0x0123
+
+#code _BIOS_CODE
+
+#local
+	push af
+	ld b, 0
+	ld c, 10
+	call set_carret_raw
+	pop af
+
+	call set_def_mon_address
+
+	ld hl, TMP_STR
+	ld b, 8
+skip_command:
+	inc hl
+	djnz skip_command
+
+	; first char
+	ld d, (hl)
+	inc hl
+	ld e, (hl)
+	; store TMP_STR cursor
+	inc hl
+	push hl
+	call HexToNum ; we have decoded value in A register
+	ld hl, MONITOR_ADDR
+	ld (hl), a
+
+	; second char
+	; pop TMP_STR cursor
+	pop hl
+	ld d, (hl)
+	inc hl
+	ld e, (hl)
+	call HexToNum ; we have decoded value in A register
+
+	ld hl, MONITOR_ADDR
+	inc hl
+	ld (hl), a
+
+	ld d, DSP_DW
+	ld e, '='
+	call sioout
+	ld e, '>'
+	call sioout
+	ld e, ' '
+	call sioout
+	ld e, '0'
+	call sioout
+	ld e, 'x'
+	call sioout
+
+	; output monitor address
+	ld hl, MONITOR_ADDR
+	ld a, (hl)
+	call NumToHex
+
+	ld b, e
+	ld e, d
+	ld d, DSP_DW
+	call sioout
+	ld e, b
+	call sioout
+
+	inc hl
+	ld a, (hl)
+	call NumToHex
+
+	ld b, e
+	ld e, d
+	ld d, DSP_DW
+	call sioout
+	ld e, b
+	call sioout
+
+	ld e, ':'
+	call sioout
+	ld e, ' '
+	call sioout
+
+
+	ld hl, (MONITOR_ADDR)
+	ld de, hl
+	ld h, e
+	ld l, d
+
+	ld b, 16
+	ld c, 0
+next_byte:
+	ld a, (hl)
+	call NumToHex
+	push bc
+	ld c, e
+	ld b, d
+
+	; write out	
+	ld d, DSP_DW
+	ld e, b
+	call pioout
+	call sioout
+	ld e, c
+	call pioout
+	call sioout
+
+	pop bc
+
+	inc hl
+
+	ld a, (hl)
+	call NumToHex
+	push bc
+	ld c, e
+	ld b, d
+
+	; write out	
+	ld d, DSP_DW
+	ld e, b
+	call pioout
+	call sioout
+	ld e, c
+	call pioout
+	call sioout
+
+	pop bc
+
+	inc hl
+
+	ld e, ' '
+	call sioout
+
+	djnz next_byte
+
+	; newline
+	ld e, 10
+	call sioout
+
+#endlocal
+	ret	
+
+
+DigitU8_ToASCII_3digit:
+	push af
+	push bc
+	ld b, a
+	ld a, 0
+	sbc 1
+	ld a, b
+	call DigitU8_ToASCII
+	pop bc
+	pop af
+	ret
+
+; converts unsigned 8bit digit in A register to 1..3 ascii characters
+; hl is expected to hold memory target area of 4 bytes for zero terminated string
+DigitU8_ToASCII:
+	push hl
+	push bc
+	push af
+#local
+	call convert
+	inc hl
+	ld (hl), 0
+	pop af
+	pop bc
+	pop hl
+	ret
+
+convert:
+	jp nc, twodigits 
+	ld	c,-100
+	call	Na1
+	inc hl
+twodigits:
+	ld	c,-10
+	call	Na1
+	inc hl
+	ld	c,-1
+Na1:
+	ld	b,'0'-1
+Na2:
+	inc	b
+	add	a,c
+	jr	c,Na2
+	sub	c		;works as add 100/10/1
+	push af		;safer than ld c,a
+	ld (hl), b
+	;ld	a,b		;char is in b
+#endlocal
+	pop af		;safer than ld a,c
+	ret
+
+; converts unsigned 16bit digit in DE register pair to 1..5 ascii characters
+; hl is expected to hold memory target area of 6 bytes for zero terminated string
+DigitU16_ToASCII:
+	push hl
+	push bc
+	push af	
+#local
+	call convert16
+	inc de
+	ld a, 0
+	ld (de), a
+	pop af
+	pop bc
+	pop hl
+	ret
+
+convert16:
+Num2Dec:
+	ld	bc,-10000
+	call	Num1
+	; if result is 0 then go back one byte in destination string to trim it out
+
+no_10k:
+	ld	bc,-1000
+	call	Num1
+	
+;	call trim_zero
+;	jr z, no_1k
+;	inc de
+
+no_1k:
+	ld	bc,-100
+	call	Num1
+
+
+no_100:
+	ld	c,-10
+	call	Num1
+	ld	c,b
+
+Num1	ld	a,'0'-1
+Num2	inc	a
+	add	hl,bc
+	jr	c,Num2
+	sbc	hl,bc
+
+	ld	(de),a
+	inc	de
+	ret
+
+trim_zero:
+	dec de
+	ld a, (de)
+	cp a, '0'
+	ret
+#endlocal
+
+
+;; *******************************************************************************
+;; **																			**
+;; **	Clock																	**
+;; **																			**
+;; *******************************************************************************
+
+init_clock:
+
+	; A channel control word and a time constant data word must be written to the appropriate registers of that channel
+
+	; * In CTC COUNTER mode, the CTC counts edges of the CLK/TRG input	
+	;	---
+
+	; * In CTC TIMER mode, the CTC generates timing intervals that are an integer value of the system clock period
+	;	--- phi * P * TC: phi = System clock, P = prescaler, TC = time constant
+
+	; interrupt vector, since I points to the correct address, we just set it to 0
+	push af
+	push bc
+	push hl
+
+	ld a, 0x10
+	out CLK_CH0, a
+
+	; lets try counter mode
+	; CH 0
+	ld a, 0b01000111
+	out CLK_CH0, a
+	ld a, 0b00000001
+;	ld a, 0b00000000
+	out CLK_CH0, a
+
+	; TC:  117 , out frequency:  21005.470085470086
+	; 2nd TC:  21 , out frequency:  1000.2604802604803	
+	; CH 1
+	ld a, 0b01000111
+	out CLK_CH1, a
+	ld a, 117
+	out CLK_CH1, a
+	
+	; CH 2
+	ld a, 0b11000111
+	out CLK_CH2, a
+	ld a, 21
+	out CLK_CH2, a
+
+	ld hl, T_RAW_MILIS
+	ld (hl), 0
+	ld hl, T_MINUTES
+	ld (hl), 0
+	ld hl, T_SECONDS
+	ld (hl), 0
+	ld hl, T_MILIS
+	ld bc, 0
+	ld (hl), bc
+
+	pop hl
+	pop bc
+	pop af
+	ret
+
+
+#data _BIOS_RAM
+T_RAW_MILIS defs 2,0
+T_MILIS defs 2,0
+T_SECONDS defs 2,0
+T_MINUTES defs 2,0
+
+#code _BIOS_CODE
+
+int_ctc_ch0:
+	di
+	ex af,af'
+	exx
+
+	ld hl, T_RAW_MILIS
+	ld (hl), 0x11
+
+	exx
+	ex af,af'
+	jr int_done
+
+int_ctc_ch1:
+	di
+	ex af,af'
+	exx
+
+	ld hl, T_RAW_MILIS
+	ld (hl), 0x22
+
+	exx
+	ex af,af'
+	jr int_done
+
+int_ctc_ch2:
+	di
+	ex af,af'
+	exx
+	
+	; increment milliseconds
+	ld hl, T_RAW_MILIS
+	ld de, (hl)
+	ld a, 1
+	add a, e
+	ld e, a
+	adc a, d
+	sub e
+	ld d, a
+	ld (hl), de
+
+	ld hl, T_MILIS
+	ld de, (hl)
+	ld a, 1
+	add a, e
+	ld e, a
+	adc a, d
+	sub e
+	ld d, a
+	ld (hl), de
+
+
+	;jr no_second_rollover 
+	ld hl, 999
+	and a
+	sbc hl, de
+	jr nc, no_second_rollover 
+	
+
+	ld hl, T_MILIS
+	ld (hl),0
+	inc hl
+	ld (hl), 0
+
+;	jr no_second_rollover
+	
+	ld hl, T_SECONDS
+	inc (hl)
+	ld e, (hl)
+	ld d, 0
+	ld hl, 59
+	and a
+	sbc hl, de
+	jr nc, no_minute_rollover
+
+	ld hl, T_SECONDS
+	ld (hl), 0
+	ld hl, T_MINUTES
+	inc (hl)
+
+
+no_minute_rollover:
+no_second_rollover:
+
+	; incements minutes
+
+	exx
+	ex af,af'
+	jr int_done
+
+int_ctc_ch3:
+	di
+	ex af,af'
+	exx
+
+	ld hl, T_RAW_MILIS
+	ld (hl), 0x44
+
+	exx
+	ex af,af'
+
+	jr int_done
+
+int_done:
+	ei
+	reti
+
+init_interrupts:
+	ld a, 0 	; our mode2 interrupt handler is at 0x2090
+	ld i, a
+	im 2
+	ei
+	ret
 
 

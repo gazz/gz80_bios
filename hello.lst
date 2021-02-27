@@ -1,0 +1,46 @@
+                        ; --------------------------------------
+                        ; zasm: assemble "hello.s"
+                        ; date: 2021-02-26 10:05:26
+                        ; --------------------------------------
+
+
+00F5:                   ClearDisplay equ 0xf5
+00C2:                   StringOut equ 0xc2
+                        
+                        #target bin
+2082:                   #code _CODE, 0x2082, 0x100	; 0x882 is the allocated memory for application of size 0x6fe (2 bytes reserved for app size)
+                        #code _CODE
+                        
+2082: 180C     [12]     	jr main
+                        
+2084: 48656C6C          TXT .asciz "Hello Yall!"
+2088: 6F205961          
+208C: 6C6C2100          
+                        
+2090:                   main:
+2090: CDF500   [17]     	call ClearDisplay
+2093: 218420   [27]     	ld hl, TXT
+2096: CDC200   [44]     	call StringOut
+                        
+2099:                   stop:
+2099: 18FE     [12]     	jr stop
+
+
+; +++ segments +++
+
+#CODE _CODE    = $2082 =  8322,  size = $0100 =   256
+
+; +++ global symbols +++
+
+ClearDisplay = $00F5 =   245          hello.s:1
+StringOut    = $00C2 =   194          hello.s:2
+TXT          = $2084 =  8324  _CODE   hello.s:10
+_CODE        = $2082 =  8322  _CODE   hello.s:4 (unused)
+_CODE_end    = $2182 =  8578  _CODE   hello.s:4 (unused)
+_CODE_size   = $0100 =   256  _CODE   hello.s:4 (unused)
+main         = $2090 =  8336  _CODE   hello.s:12
+stop         = $2099 =  8345  _CODE   hello.s:17
+
+
+total time: 0.0029 sec.
+no errors

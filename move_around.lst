@@ -1,6 +1,6 @@
                         ; --------------------------------------
                         ; zasm: assemble "move_around.z80"
-                        ; date: 2020-07-14 23:44:18
+                        ; date: 2020-12-24 01:33:52
                         ; --------------------------------------
 
 
@@ -23,13 +23,13 @@
 0006:                   PORTAC 	equ 0x6
 0007:                   PORTBC 	equ 0x7
                         
-047B:                   OutHex equ $047B
+04EE:                   OutHex equ $04EE
 0292:                   NumToHex equ $0292
-0497:                   DisableCursor equ $0497
-04F8:                   Wait_PS2ScanCode equ $04F8
+050A:                   DisableCursor equ $050A
+056B:                   Wait_PS2ScanCode equ $056B
                         ; there are RAM mapped
-083E:                   STATE_KEYSTROKE equ $083E
-0842:                   STATE_SCANCODE equ $0842
+203E:                   STATE_KEYSTROKE equ $203E
+2042:                   STATE_SCANCODE equ $2042
 0060:                   Wait equ 0x60
                         
                         
@@ -95,7 +95,7 @@
 08BA: 0E00     [47]     	ld c, 0
 08BC: CD9F0B   [64]     	call SetCaretRaw
                         
-08BF: 213E08   [74]     	ld hl, STATE_KEYSTROKE
+08BF: 213E20   [74]     	ld hl, STATE_KEYSTROKE
                         	; quick check if we have any keystroke chars
 08C2: 7E       [81]     	ld a, (hl)
 08C3: F600     [88]     	or 0
@@ -104,7 +104,7 @@
 08C9: 23       [108]    	inc hl
 08CA:                   outcode:	
 08CA: 7E       [ 7]     	ld a, (hl)
-08CB: CD7B04   [24]     	call OutHex
+08CB: CDEE04   [24]     	call OutHex
 08CE: 23       [30]     	inc hl
 08CF: 10F9     [38|43]  	djnz outcode
                         
@@ -118,7 +118,7 @@
                         
 08D5:                   move:
                         #local
-08D5: 3A3F08   [13]     	ld a, (STATE_KEYSTROKE + 1)
+08D5: 3A3F20   [13]     	ld a, (STATE_KEYSTROKE + 1)
                         
 08D8: F5       [24]     	push af
 08D9: D66B     [31]     	sub 6bh
@@ -190,13 +190,13 @@
 092D: CD4F05   [62]     	call PIOOut
                         
 0930: 3A8508   [75]     	ld a, (xpos)
-0933: CD7B04   [92]     	call OutHex
+0933: CDEE04   [92]     	call OutHex
                         
 0936: 1E2C     [99]     	ld e, ','
 0938: CD4F05   [116]    	call PIOOut
                         
 093B: 3A8608   [129]    	ld a, (ypos)
-093E: CD7B04   [146]    	call OutHex
+093E: CDEE04   [146]    	call OutHex
                         
 0941: 1605     [153]    	ld d, DSP_DW
 0943: 1E5D     [160]    	ld e, ']'
@@ -205,11 +205,11 @@
 0948: C9       [187]    	ret	
                         
 0949:                   main:
-0949: 213E08   [10]     	ld hl, STATE_KEYSTROKE
+0949: 213E20   [10]     	ld hl, STATE_KEYSTROKE
 094C: 3600     [20]     	ld (hl), 0
 094E: CDF700   [37]     	call ClearDisplay
 0951: CDF508   [54]     	call reset_pos
-0954: CD9704   [71]     	call DisableCursor
+0954: CD0A05   [71]     	call DisableCursor
 0957: CDAE0A   [88]     	call write_player_chars_to_cgram
 095A: CD670B   [105]    	call write_boundaries_chars
                         
@@ -228,7 +228,7 @@
                         	; call draw_player
                         
                         	; wait for input
-0963: CDF804   [34]     	call Wait_PS2ScanCode
+0963: CD6B05   [34]     	call Wait_PS2ScanCode
 0966: CD840B   [51]     	call scancode_to_keystroke
                         
                         	; move
@@ -546,8 +546,8 @@
 0B86: C5       [33]     	push bc
                         
                         	; test only => copy pure scancode into keystroke
-0B87: 113E08   [43]     	ld de, STATE_KEYSTROKE
-0B8A: 214208   [53]     	ld hl, STATE_SCANCODE
+0B87: 113E20   [43]     	ld de, STATE_KEYSTROKE
+0B8A: 214220   [53]     	ld hl, STATE_SCANCODE
 0B8D: 0600     [60]     	ld b, 0
 0B8F: 0E04     [67]     	ld c, 4
 0B91: EDB0     [83|21]  	ldir
@@ -599,7 +599,7 @@ DSP_DW                 = $0005 =     5          move_around.z80:14
 DSP_IR                 = $0003 =     3          move_around.z80:12 (unused)
 DSP_IRC                = $0002 =     2          move_around.z80:13 (unused)
 DSP_IW                 = $0001 =     1          move_around.z80:11
-DisableCursor          = $0497 =  1175          move_around.z80:22
+DisableCursor          = $050A =  1290          move_around.z80:22
 EMPTY_CHAR             = $09AF =  2479  _CODE   move_around.z80:291
 FIELD_BOTTOM_LEFT      = $0050 =    80  _CODE   move_around.z80:288
 FIELD_BOTTOM_RIGHT     = $0058 =    88  _CODE   move_around.z80:289
@@ -608,7 +608,7 @@ FIELD_TOP_RIGHT        = $0048 =    72  _CODE   move_around.z80:287
 LEFT_EDGE              = $0060 =    96  _CODE   move_around.z80:283
 LEFT_EDGE_CHAR         = $09B7 =  2487  _CODE   move_around.z80:300
 NumToHex               = $0292 =   658          move_around.z80:21 (unused)
-OutHex                 = $047B =  1147          move_around.z80:20
+OutHex                 = $04EE =  1262          move_around.z80:20
 PIOOut                 = $054F =  1359          move_around.z80:3
 PLAYAREA               = $09E7 =  2535  _CODE   move_around.z80:356 (unused)
 PORTA                  = $0004 =     4          move_around.z80:15 (unused)
@@ -617,12 +617,12 @@ PORTB                  = $0005 =     5          move_around.z80:16 (unused)
 PORTBC                 = $0007 =     7          move_around.z80:18 (unused)
 RIGHT_EDGE             = $0068 =   104  _CODE   move_around.z80:284
 RIGHT_EDGE_CHAR        = $09BF =  2495  _CODE   move_around.z80:309
-STATE_KEYSTROKE        = $083E =  2110          move_around.z80:25
-STATE_SCANCODE         = $0842 =  2114          move_around.z80:26
+STATE_KEYSTROKE        = $203E =  8254          move_around.z80:25
+STATE_SCANCODE         = $2042 =  8258          move_around.z80:26
 SetCaretRaw            = $0B9F =  2975  _CODE   move_around.z80:561
 SetCaretRaw_bios       = $011C =   284          move_around.z80:8 (unused)
 Wait                   = $0060 =    96          move_around.z80:27 (unused)
-Wait_PS2ScanCode       = $04F8 =  1272          move_around.z80:23
+Wait_PS2ScanCode       = $056B =  1387          move_around.z80:23
 _CODE                  = $0882 =  2178  _CODE   move_around.z80:31 (unused)
 _CODE_end              = $0F80 =  3968  _CODE   move_around.z80:31 (unused)
 _CODE_size             = $06FE =  1790  _CODE   move_around.z80:31 (unused)
@@ -677,5 +677,5 @@ shift_char_hor        = $0B5C =  2908  _CODE   move_around.z80:499
 zero_offset           = $0B60 =  2912  _CODE   move_around.z80:502
 
 
-total time: 0.0068 sec.
+total time: 0.0080 sec.
 no errors
