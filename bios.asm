@@ -1114,7 +1114,7 @@ busy_clear:
 
 	ret
 
-WELCOME .asciz 	"gazz80, v0.34      "
+WELCOME .asciz 	"gazz80, v0.42      "
 SHELL .asciz 	" >                 "
 INT_YO .asciz 	"Interrupt!!!"
 
