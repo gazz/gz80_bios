@@ -1,6 +1,6 @@
                         ; --------------------------------------
                         ; zasm: assemble "bios.asm"
-                        ; date: 2021-02-26 20:48:37
+                        ; date: 2021-02-27 18:07:59
                         ; --------------------------------------
 
 
@@ -1139,10 +1139,10 @@
                         
 0545: C9       [104]    	ret
                         
-0546: 67617A7A          WELCOME .asciz 	"gazz80, v0.40      "
+0546: 67617A7A          WELCOME .asciz 	"gazz80, v0.42      "
 054A: 38302C20          
 054E: 76302E34          
-0552: 30202020          
+0552: 32202020          
 0556: 20202000          
 055A: 203E2020          SHELL .asciz 	" >                 "
 055E: 20202020          
@@ -1882,5 +1882,5 @@ no_1k     = $06D7 =  1751  _BIOS_CODE bios.asm:1400 (unused)
 trim_zero = $06EE =  1774  _BIOS_CODE bios.asm:1420 (unused)
 
 
-total time: 0.0190 sec.
+total time: 0.0255 sec.
 no errors
